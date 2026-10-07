@@ -1,0 +1,741 @@
+@import "tailwindcss";
+
+/*
+  Cafe Re faire のデザイントークン。
+
+  色は、店の実物から取っている（届いた写真の色を測った）。
+    生成りの地 … 外壁の白い塗り壁と、店内の明るい壁
+    墨         … 黒い外壁、ケーキをのせる石の皿
+    扉の水色   … 入口の扉（#7fafc3）。差し色はこの1色だけ。細い線と小さな印にだけ使う
+  黒い地＋金、紫や青のグラデーション、影、角丸のカードは使わない。
+  区画は、地の色を交互に替えずに、余白と写真で分ける。
+
+  カスタムクラスは必ず @layer components の中に書く
+  （レイヤーの外に書くと、Tailwind のユーティリティを打ち消してしまう）。
+*/
+@theme {
+  --color-paper: #f6f4ef; /* 地 */
+  --color-paper-2: #ebe7df; /* 地（フッターと写真の下地） */
+  --color-line: #d6d0c5; /* 罫 */
+  --color-ink: #2e2c29; /* 文字（見出し） */
+  --color-ink-2: #55514b; /* 文字（本文） */
+  --color-mute: #6d6760; /* 注記（生成りの地の上で 4.5:1 以上） */
+  --color-door: #7fafc3; /* 扉の水色。飾りの線・印・フォーカスの輪 */
+  --color-door-deep: #386a7f; /* 水色を文字に使うときの濃い側（地の上で 4.5:1 以上） */
+
+  /* 和文の見出しは端末の明朝、本文は端末のゴシック（日本語の Web フォントは読み込まない。表示が大きく遅れるため） */
+  --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif CJK JP", "Noto Serif JP", serif;
+  --font-gothic: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", "YuGothic", "Noto Sans JP", "Noto Sans CJK JP", Meiryo, sans-serif;
+  /* 欧文（店名・数字・小さなラベル）だけ Web フォント（EB Garamond） */
+  --font-latin: var(--font-garamond), "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  --font-latin-italic: var(--font-garamond-italic), var(--font-garamond), "Hiragino Mincho ProN", "Yu Mincho", serif;
+
+  --ease-quiet: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* 左右の余白 */
+    --gutter: 1.5rem;
+    /* 本文の器の最大幅 */
+    --wrap-max: 76rem;
+    /* 写真を端まで伸ばすときの、いちばん外側の幅（とても広い画面で、写真が大きくなりすぎないように） */
+    --outer-max: 100rem;
+    /* 区画と区画のあいだの余白（スマートフォン 104px ／ PC 180〜208px） */
+    --gap: clamp(6.5rem, 15vw, 13rem);
+    /*
+      器（.wrap）の端から、区画の端までの距離。写真を片側だけ区画の端まで伸ばすときに使う。
+      100cqw は「いちばん近い区画（.section）の幅」。画面の幅（100vw）で測ると、スクロールバーの分だけずれるため。
+    */
+    --edge: max(var(--gutter), calc((100cqw - var(--wrap-max)) / 2));
+    /* 固定ヘッダーの高さ */
+    --header-h: 4rem;
+  }
+  @media (min-width: 768px) {
+    :root {
+      --gutter: 2.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    :root {
+      --gutter: 4rem;
+      --header-h: 5rem;
+    }
+  }
+  @media (min-width: 1440px) {
+    :root {
+      --gutter: 6rem;
+    }
+  }
+
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink-2);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-h) + 1.5rem);
+  }
+
+  /* 本文：16px、行間 2.0。ゴシック */
+  body {
+    font-family: var(--font-gothic);
+    font-size: 1rem;
+    line-height: 2;
+    letter-spacing: 0.04em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-break: strict;
+    overflow-wrap: anywhere;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-ink);
+    font-family: var(--font-mincho);
+    font-weight: 500;
+    font-feature-settings: "palt";
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: #cfe0e6;
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-door-deep);
+    outline-offset: 4px;
+  }
+
+  address {
+    font-style: normal;
+  }
+
+  /* dialog の既定の枠と余白を消す（メニューで使う） */
+  dialog {
+    padding: 0;
+    border: 0;
+    color: inherit;
+    max-width: none;
+    max-height: none;
+  }
+}
+
+@layer components {
+  /* ---- 器 ---------------------------------------------------------------- */
+  .wrap {
+    width: min(100% - var(--gutter) * 2, var(--wrap-max));
+    margin-inline: auto;
+  }
+
+  /* 読みものの幅（1行 34字ほど） */
+  .measure {
+    max-width: 34em;
+  }
+
+  /* 区画。上下に余白の半分ずつを持つので、区画どうしのあいだは --gap になる */
+  .section {
+    max-width: var(--outer-max);
+    margin-inline: auto;
+    padding-block: calc(var(--gap) / 2);
+    /* 中の要素が、この区画の幅（100cqw）を基準にできるようにする */
+    container-type: inline-size;
+  }
+  /* 余白を持たない区画（記事の見出し写真など。中で pull-l / pull-r を使うための入れ物） */
+  .cq {
+    max-width: var(--outer-max);
+    margin-inline: auto;
+    container-type: inline-size;
+  }
+  /*
+    画面の外にある区画は、近づくまで描画しない（長いページの最初の処理を軽くする）。
+    中身は HTML にそのまま入っているので、検索エンジンにもページ内検索にも見える。
+    ページ内リンク（#id）の飛び先になる区画には .no-cv を付けて外す（飛んだ位置がずれるため）。
+  */
+  .section:not(.no-cv) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 52rem;
+  }
+
+  /* ---- 文字 -------------------------------------------------------------- */
+  .t-h1 {
+    font-size: clamp(1.625rem, 1.32rem + 1.3vw, 2.5rem);
+    line-height: 1.7;
+    letter-spacing: 0.08em;
+  }
+  .t-h2 {
+    font-size: clamp(1.4375rem, 1.2rem + 1vw, 2.125rem);
+    line-height: 1.75;
+    letter-spacing: 0.08em;
+  }
+  .t-h3 {
+    font-size: clamp(1.0625rem, 1.02rem + 0.25vw, 1.1875rem);
+    line-height: 1.8;
+    letter-spacing: 0.06em;
+  }
+  .t-lead {
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+    line-height: 2.15;
+    letter-spacing: 0.05em;
+    color: var(--color-ink);
+  }
+  /* 注記。本文より小さいのは、ここだけ */
+  .t-note {
+    font-size: 0.8125rem;
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+    color: var(--color-mute);
+  }
+
+  /* 区画の名前（小さなラベル）。扉の水色の短い線を添える */
+  .label {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    letter-spacing: 0.22em;
+    color: var(--color-mute);
+  }
+  .label::before {
+    content: "";
+    display: block;
+    width: 1.75rem;
+    height: 1px;
+    background: var(--color-door);
+  }
+
+  /* 欧文（店名など）。斜体の EB Garamond */
+  .latin-i {
+    font-family: var(--font-latin-italic);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    font-feature-settings: "liga", "kern";
+  }
+  /* 数字（価格・時刻） */
+  .num {
+    font-family: var(--font-latin);
+    font-weight: 400;
+    font-size: 1.22em;
+    letter-spacing: 0.03em;
+    font-variant-numeric: lining-nums;
+    line-height: 1;
+  }
+
+  /* 文節で折り返すための箱（見出しが語の途中で切れないように） */
+  .ib {
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  /* ---- リンク ------------------------------------------------------------ */
+  .link {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.4em;
+    text-decoration-color: var(--color-door);
+    transition: text-decoration-color 0.4s var(--ease-quiet), color 0.4s var(--ease-quiet);
+  }
+  .link:hover {
+    color: var(--color-door-deep);
+    text-decoration-color: var(--color-door-deep);
+  }
+
+  /* 先へ進むリンク。文字のあとに細い線が伸びる（箱や丸いボタンにはしない） */
+  .more {
+    display: inline-flex;
+    align-items: center;
+    gap: 1em;
+    min-height: 2.75rem;
+    color: var(--color-ink);
+    font-size: 0.9375rem;
+    letter-spacing: 0.1em;
+  }
+  .more::after {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.5;
+    transform-origin: left center;
+    transition: transform 0.6s var(--ease-quiet), opacity 0.6s var(--ease-quiet), background-color 0.6s var(--ease-quiet);
+  }
+  .more:hover::after {
+    transform: scaleX(1.5);
+    opacity: 1;
+    background: var(--color-door-deep);
+  }
+
+  /* ---- 行の並び（カードの代わり） ---------------------------------------- */
+  .rows > * {
+    border-top: 1px solid var(--color-line);
+  }
+  .rows > *:last-child {
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* 定義リスト：左に項目、右に内容 */
+  .facts > div {
+    display: grid;
+    grid-template-columns: 5.25em minmax(0, 1fr);
+    gap: 1.25rem;
+    padding-block: 1.05rem;
+    border-top: 1px solid var(--color-line);
+  }
+  .facts > div:last-child {
+    border-bottom: 1px solid var(--color-line);
+  }
+  .facts dt {
+    color: var(--color-mute);
+    font-size: 0.8125rem;
+    letter-spacing: 0.1em;
+    line-height: 2.45;
+  }
+  .facts dd {
+    color: var(--color-ink);
+    line-height: 2;
+  }
+  @media (min-width: 768px) {
+    .facts > div {
+      grid-template-columns: 7.5em minmax(0, 1fr);
+      gap: 2rem;
+      padding-block: 1.25rem;
+    }
+  }
+
+  /* ---- ヘッダー ---------------------------------------------------------- */
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    height: var(--header-h);
+    background: var(--color-paper);
+    border-bottom: 1px solid var(--color-line);
+    color: var(--color-ink);
+    transition: background-color 0.5s var(--ease-quiet), border-color 0.5s var(--ease-quiet), color 0.5s var(--ease-quiet);
+  }
+  /* トップの最初の画面では、写真の上に透けて重なる。店名は出さない（ヒーローに大きく出ているため） */
+  .site-header[data-over-hero]:not([data-scrolled]) {
+    background: transparent;
+    border-bottom-color: transparent;
+    color: #fff;
+  }
+  .site-header .hide-on-hero {
+    transition: opacity 0.5s var(--ease-quiet), visibility 0.5s;
+  }
+  .site-header[data-over-hero]:not([data-scrolled]) .hide-on-hero {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    font-size: 0.8125rem;
+    letter-spacing: 0.16em;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.75em;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 0.4s var(--ease-quiet);
+  }
+  .nav-link:hover,
+  .nav-link[aria-current="page"] {
+    text-decoration-color: var(--color-door);
+  }
+
+  /* ---- 全画面メニュー ---------------------------------------------------- */
+  .menu-dialog {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .menu-dialog::backdrop {
+    background: var(--color-paper);
+  }
+  .menu-dialog[open] {
+    animation: fade-in 0.4s var(--ease-quiet);
+  }
+
+  /* ---- ヒーロー ---------------------------------------------------------- */
+  .hero {
+    position: relative;
+    /*
+      画面の高さより、ほんの少しだけ低くする。
+      写真が画面をぴったり覆うと、Chrome はそれを「背景」とみなして表示速度の計測（LCP）の対象から外す。
+      いちばん大きな要素であるこの写真を、正しく計測の対象にするため。見た目の差は分からない。
+    */
+    height: calc(100svh - 4px);
+    min-height: 34rem;
+    overflow: hidden;
+    background: #8f8b85;
+    color: #fff;
+  }
+  .hero-media {
+    position: absolute;
+    inset: 0;
+  }
+  .hero-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* ごくわずかに引いていく（一度きり）。写真は最初から見えているので、表示の速さには影響しない */
+    animation: hero-settle 8s var(--ease-quiet) both;
+  }
+  @keyframes hero-settle {
+    from {
+      transform: scale(1.045);
+    }
+    to {
+      transform: none;
+    }
+  }
+  /* 文字を読めるようにするための陰。上はヘッダーの文字のため、下は店名のため */
+  .hero-shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, rgb(38 35 31 / 0.38) 0%, rgb(38 35 31 / 0) 22%),
+      linear-gradient(to top, rgb(38 35 31 / 0.66) 0%, rgb(38 35 31 / 0.3) 30%, rgb(38 35 31 / 0) 58%);
+    pointer-events: none;
+  }
+  .hero-message {
+    font-family: var(--font-mincho);
+    font-size: clamp(1rem, 0.9rem + 0.5vw, 1.3125rem);
+    line-height: 2;
+    letter-spacing: 0.2em;
+  }
+  /* 幅の狭いスマートフォンでは、1行に収まるように字間を少し詰める */
+  @media (max-width: 359px) {
+    .hero-message {
+      letter-spacing: 0.12em;
+    }
+  }
+  .hero-wordmark {
+    display: block;
+    font-family: var(--font-latin-italic);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3.25rem, 1.9rem + 6.4vw, 7.5rem);
+    line-height: 1;
+    letter-spacing: 0.005em;
+    color: #fff;
+  }
+  /* 店名の下に添える、どこの何の店か。表札の添え書きのように小さく */
+  .hero-place {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    font-family: var(--font-gothic);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.3em;
+    color: #fff;
+  }
+  .hero-place::before {
+    content: "";
+    display: block;
+    width: 2rem;
+    height: 1px;
+    background: var(--color-door);
+  }
+  @media (min-width: 768px) {
+    .hero-place {
+      font-size: 0.8125rem;
+    }
+  }
+
+  /* 下層ページの冒頭（固定のヘッダーの分を含む） */
+  .page-head {
+    padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 5.5rem));
+  }
+
+  /* ---- 写真 -------------------------------------------------------------- */
+  /*
+    .photo    … 置き場所（大きさを決める箱）。画面に入ったかどうかは、この箱で見る
+    .photo-in … 中身（写真を切り抜く箱）。現れる動きは、こちらに付ける
+    2つに分けてあるのは、隠している箱そのものは「画面に入った」と判定されないため。
+  */
+  .photo {
+    position: relative;
+    /* 比率は Photo が --ar（と、スマートフォン用の --ar-sp）で渡す */
+    aspect-ratio: var(--ar-sp, var(--ar, auto));
+  }
+  @media (min-width: 768px) {
+    .photo {
+      aspect-ratio: var(--ar, auto);
+    }
+  }
+  .photo-in {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--color-paper-2);
+  }
+  .photo-in > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 写真以外の枠（記事一覧の小さな写真・地図） */
+  .frame {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-paper-2);
+  }
+  .frame > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 写真に添える短い説明 */
+  .caption {
+    margin-top: 0.85rem;
+    font-size: 0.8125rem;
+    line-height: 1.8;
+    letter-spacing: 0.05em;
+    color: var(--color-mute);
+  }
+
+  /* ---- 読みもの（記事の本文） -------------------------------------------- */
+  .prose {
+    color: var(--color-ink-2);
+  }
+  .prose > * + * {
+    margin-top: 1.75em;
+  }
+  .prose h2 {
+    margin-top: 3.6em;
+    font-size: clamp(1.25rem, 1.16rem + 0.4vw, 1.4375rem);
+    line-height: 1.8;
+    letter-spacing: 0.07em;
+    scroll-margin-top: calc(var(--header-h) + 1.5rem);
+  }
+  /* 節の区切り。罫ではなく、扉の水色の短い線を1本 */
+  .prose h2::before {
+    content: "";
+    display: block;
+    width: 2rem;
+    height: 1px;
+    margin-bottom: 1.6em;
+    background: var(--color-door);
+  }
+  .prose h3 {
+    margin-top: 2.6em;
+    font-size: 1.0625rem;
+    line-height: 1.85;
+    letter-spacing: 0.06em;
+  }
+  .prose h2 + *,
+  .prose h3 + * {
+    margin-top: 1.25em;
+  }
+  .prose a {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.4em;
+    text-decoration-color: var(--color-door);
+    transition: text-decoration-color 0.4s var(--ease-quiet), color 0.4s var(--ease-quiet);
+  }
+  .prose a:hover {
+    color: var(--color-door-deep);
+    text-decoration-color: var(--color-door-deep);
+  }
+  .prose strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  .prose ul {
+    list-style: none;
+  }
+  .prose ul > li {
+    position: relative;
+    padding-left: 1.4em;
+  }
+  .prose ul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.1em;
+    top: 0.98em;
+    width: 0.6em;
+    height: 1px;
+    background: var(--color-door-deep);
+  }
+  .prose ol {
+    list-style: decimal;
+    padding-left: 1.4em;
+  }
+  .prose li + li {
+    margin-top: 0.5em;
+  }
+  .prose blockquote {
+    padding-left: 1.4em;
+    border-left: 1px solid var(--color-door);
+    color: var(--color-ink);
+  }
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375em;
+    line-height: 1.9;
+  }
+  .prose th,
+  .prose td {
+    padding: 0.85em 0.9em 0.85em 0;
+    border-top: 1px solid var(--color-line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose tr:last-child td {
+    border-bottom: 1px solid var(--color-line);
+  }
+  .prose th {
+    color: var(--color-mute);
+    font-weight: 400;
+    font-size: 0.875em;
+    letter-spacing: 0.08em;
+  }
+  /* いちばん左の列（項目の名前）は、途中で折り返さない */
+  .prose th:first-child,
+  .prose td:first-child {
+    white-space: nowrap;
+    color: var(--color-mute);
+  }
+  @media (max-width: 767px) {
+    .prose table {
+      font-size: 0.875em;
+    }
+  }
+  .prose hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+    margin-block: 3em;
+  }
+
+  /* ---- 現れかた ---------------------------------------------------------- */
+  /*
+    動きは3つだけ。
+      1) 写真が、画面に入ったときに幕が上がるように現れる（位置は動かさない。中の写真はわずかに引く）
+      2) 最初の画面の文字が、一度だけゆっくり現れる
+      3) ヒーローの写真が、ごくわずかに引いていく
+    文字の区画は動かさない（区画ごとに下からふわっと出す、という動きは使わない）。
+    JS が動かないときは、html に .js が付かないので、すべて最初から見えている。
+  */
+  .js [data-reveal] > .photo-in {
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 1.2s var(--ease-quiet);
+    transition-delay: var(--reveal-delay, 0s);
+  }
+  .js [data-reveal] > .photo-in > img {
+    transform: scale(1.07);
+    transition: transform 1.8s var(--ease-quiet);
+    transition-delay: var(--reveal-delay, 0s);
+  }
+  .js [data-reveal].is-in > .photo-in {
+    clip-path: inset(0);
+  }
+  .js [data-reveal].is-in > .photo-in > img {
+    transform: none;
+  }
+
+  .fade-in {
+    animation: fade-in 1.6s var(--ease-quiet) both;
+    animation-delay: var(--fade-delay, 0.2s);
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* 印刷のときは、まだ現れていない写真も出す。画面外の区画も描き、ヘッダーは紙の先頭に置く */
+  @media print {
+    .js [data-reveal] > .photo-in,
+    .js [data-reveal] > .photo-in > img {
+      clip-path: none;
+      transform: none;
+      transition: none;
+    }
+    .section:not(.no-cv) {
+      content-visibility: visible;
+    }
+    .site-header {
+      position: static;
+    }
+    .page-head {
+      padding-top: 2rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js [data-reveal] > .photo-in,
+    .js [data-reveal] > .photo-in > img {
+      clip-path: none;
+      transform: none;
+      transition: none;
+    }
+    .fade-in,
+    .menu-dialog[open],
+    .hero-media img {
+      animation: none;
+    }
+    .more::after,
+    .link,
+    .nav-link,
+    .site-header,
+    .site-header .hide-on-hero {
+      transition: none;
+    }
+  }
+}
+
+/*
+  器（.wrap）の中に置いた写真を、片側だけ区画の端まで伸ばす。
+  写真だけが外へ出て、下の説明文は器の端にそろったまま残る。
+  @utility で定義してあるので、md:pull-l のように画面の幅ごとに付け外しできる。
+*/
+@utility pull-l {
+  margin-left: calc(var(--edge) * -1);
+}
+@utility pull-r {
+  margin-right: calc(var(--edge) * -1);
+}
+
+/* 画面には出さず、キーボードで選んだときだけ見せる（本文へ移動するリンク） */
+@utility sr-only-focusable {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  transform: translateY(-200%);
+  &:focus {
+    transform: none;
+  }
+}

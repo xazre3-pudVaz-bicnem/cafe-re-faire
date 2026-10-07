@@ -1,0 +1,296 @@
+# Cafe Re faire 公式サイト
+
+岩手県奥州市水沢のカフェ「Cafe Re faire（カフェ ルフェール）」の公式サイトです。
+
+- Next.js 16（App Router）／ TypeScript ／ Tailwind CSS v4
+- 全ページを静的に書き出す（動くのは、毎日の自動投稿の入口 `/api/cron/daily-post` だけ）
+- GitHub に push すると Vercel がデプロイする。ブログは、毎朝 Vercel Cron が1本書いて GitHub にコミットする
+
+## 目次
+
+1. [はじめかた](#はじめかた)
+2. [フォルダーの中身](#フォルダーの中身)
+3. [店の情報を直す](#店の情報を直す)
+4. [ページと、受け持つ検索語](#ページと受け持つ検索語)
+5. [毎日の自動投稿](#毎日の自動投稿)
+6. [環境変数](#環境変数)
+7. [Vercel 側の設定](#vercel-側の設定)
+8. [GitHub 側の設定](#github-側の設定)
+9. [点検のコマンド](#点検のコマンド)
+10. [写真](#写真)
+11. [つまずきやすいところ](#つまずきやすいところ)
+
+---
+
+## はじめかた
+
+```bash
+npm install
+cp .env.example .env.local   # 値を入れる（手元で見るだけなら、空のままでも動く）
+npm run dev                  # http://localhost:3000
+```
+
+本番と同じ出力（canonical・sitemap・構造化データの URL）を手元で確かめるときは、公開 URL を付けてビルドします。
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://<本番のドメイン> npm run build
+NEXT_PUBLIC_SITE_URL=https://<本番のドメイン> npx next start -p 4321
+npm run site:check           # 配信されている HTML を点検する
+```
+
+## フォルダーの中身
+
+```text
+app/
+  (home)/page.tsx            トップ
+  (pages)/menu|about|access  固定ページ
+  (pages)/blog/              ブログ（一覧・分類・記事・RSS）
+  api/cron/daily-post/       毎日の自動投稿の入口（Vercel Cron が呼ぶ）
+  sitemap.ts robots.ts manifest.ts
+components/
+  layout/                    ヘッダー・フッター・メニュー
+  sections/                  区画（ヒーロー、店舗情報、地図、記事の一覧 など）
+  ui/                        写真、パンくず、構造化データ
+content/blog/<年>/           記事（Markdown）。ファイル名は <日付>-<slug>.md
+content/drafts/              公開前の原稿（サイトには出ない）
+data/
+  site.ts                    店舗情報（住所・電話・営業時間・駐車場 …）★ここを直す
+  menu.ts                    メニュー（ケーキ6種の価格、プレート）
+  pages.ts                   固定ページの title・description・受け持つ検索語
+  photo-meta.ts / photos.ts  写真の登録簿（alt）
+  blog-topics.ts             自動投稿の題材（1題材＝1検索語）
+  blog-categories.ts         ブログの分類
+  faq.ts                     よくある質問
+lib/
+  seo.ts schema.ts           metadata と構造化データ（JSON-LD）
+  blog/                      記事の読み込み、題材選び、プロンプト、検査、GitHub への保存
+scripts/                     写真の準備、点検、自動投稿の試し書き
+docs/TODO.md                 店舗に確認したいこと
+assets/source-photos/        店から届いた元の写真（サイトには出ない）
+```
+
+## 店の情報を直す
+
+**住所・電話・営業時間・定休日・駐車場・支払い方法は、`data/site.ts` だけを直します。**
+ページ、フッター、構造化データ、検索結果に出る説明文、自動投稿の「事実シート」が、すべてここから作られます。
+ページのファイルに住所や時刻を直接書くと、`npm run seo:audit` が見つけて止めます。
+
+| 直したいもの | 直す場所 |
+| --- | --- |
+| 住所・電話・営業時間・定休日・駐車場・支払い・予約の方法 | `data/site.ts` の `site` |
+| その月だけの休み・時間の変更 | `data/site.ts` の `monthNotices`（月ごとに足す） |
+| ケーキの名前・価格 | `data/menu.ts` の `cakes` |
+| プレートの写真と説明 | `data/menu.ts` の `plates` |
+| 検索結果に出る題名・説明文 | `data/pages.ts` |
+| よくある質問 | `data/faq.ts` |
+| 写真の説明（alt） | `data/photo-meta.ts` |
+
+`data/site.ts` で値が `null` の項目（席数・Wi-Fi など）は、確かめられていない情報です。
+`null` の間は、画面にも構造化データにも出ません。分かったら値を入れてください（一覧は `docs/TODO.md`）。
+
+## ページと、受け持つ検索語
+
+1ページに1つの役割を持たせ、同じ検索語を複数のページで取り合わないようにしてあります（`data/pages.ts`）。
+
+| ページ | 受け持つ検索語 | 役割 |
+| --- | --- | --- |
+| `/` | 水沢 カフェ（奥州市 カフェ） | どんな店かを写真で伝え、下のページへ送る |
+| `/menu` | 水沢 ランチ カフェ（水沢 ケーキ・スイーツ・テイクアウト） | 何が食べられるか・いくらか |
+| `/about` | Cafe Re faire・カフェ ルフェール（水沢 新しいカフェ） | どこの・いつからの・どんな店か |
+| `/access` | 水沢 カフェ 駐車場（水沢駅 カフェ・営業時間） | 行き方・営業時間・駐車場・よくある質問 |
+| `/blog` | Cafe Re faire ブログ | 記事の入口 |
+| `/blog/<slug>` | 記事ごとに1つ（`focusKeyword`） | 細かい疑問に、1記事で1つ答える |
+
+構造化データ（JSON-LD）は `lib/schema.ts` にまとめてあります。
+
+- トップ・アクセス … 店を `CafeOrCoffeeShop` として詳しく（住所・電話・営業時間・その月だけの休み・地図・座標・支払い・駐車場・`sameAs`）
+- それ以外のページ … 店を `Organization` として手短に（店名・`sameAs`）。**`@id` はトップと同じ**なので、同じ店の「詳しい版」と「簡単な版」になる
+- 全ページ … `WebSite` ＋ `WebPage`／トップ以外 … `BreadcrumbList`
+- `/menu` … `Menu`（ケーキは価格つき）／`/access` … `FAQPage`（サイト内でここだけ）／`/blog` … `Blog`／記事 … `BlogPosting`
+
+評価（星）・口コミ・価格帯など、確かめられていない項目は入れていません。
+canonical・`og:url`・sitemap・構造化データの URL は、1文字も違わない同じ形にそろえてあります（トップは末尾の `/` なし）。`npm run site:check` が確かめます。
+
+## 毎日の自動投稿
+
+### 流れ
+
+```text
+Vercel Cron（毎朝 6:30 ごろ・日本時間）
+  └→ GET /api/cron/daily-post          … 合言葉（CRON_SECRET）を確かめる
+       ├→ いまある記事を読む            … ビルドに入っている分 ＋ GitHub にだけある分
+       ├→ 今日の分があれば、何もしない
+       ├→ 題材を選ぶ                    … data/blog-topics.ts（まだ書いていないもの）
+       ├→ Claude API で書く             … 店の事実シートを渡す
+       ├→ 検査する                      … lib/blog/validate.ts。落ちたら、指摘を渡して直させる
+       └→ 通った原稿だけを GitHub にコミット（content/blog/<年>/<日付>-<slug>.md）
+            └→ いつもの GitHub → Vercel のデプロイで公開
+```
+
+Vercel へ直接デプロイする処理は、ありません。記事は必ず GitHub を通ります（履歴が残り、手で直すこともできます）。
+
+### 低品質な記事を量産しないための仕組み
+
+- **1題材＝1検索語＝1記事。** 題材は `data/blog-topics.ts` に84本用意してあります（メニュー29／カフェの使い方22／水沢・奥州11／季節18／店のこと4）。
+  「水沢のおすすめカフェ」のような、固定ページと同じ語を狙う題材は置いていません。
+- **どの記事も同じ形で終わらせない。** 店の紹介を記事の最後に付け足す形（最後の見出しが店名／最後の節が店の話）と、
+  リンクを1か所に並べる形（1段落に3本以上）は、検査で落ちます。店の話は、題材と店が実際につながるところに織り込ませます。
+- **固定ページとの取り合いを防ぐ。** 固定ページが受け持つ検索語（`data/pages.ts`）と同じ・近い検索語の記事は、検査で落ちます。
+- **重複を防ぐ。** 題名（似ている度合い）・検索語・本文（8文字の連なりの重なり）・見出しの立て方を、既存の全記事と比べます。
+- **同じ分類を続けない。** いちばん長く書いていない分類から題材を選びます。構成の型も6種類あり、直近3本と違う型を使います。
+- **季節を外さない。** 季節の題材は、`months` に書いた月にだけ出ます。
+- **題材を書き終えたあと。** モデルに新しい題材を1つ提案させ、同じ検査（検索語の重なり・評価のことばを前提にしていないか）を通ったものだけを使います。
+  「水沢・奥州のこと」の題材は、人が確かめた事実（`facts`）が要るので、提案させません。足すときは `data/blog-topics.ts` に書きます。
+
+### 事実でないことを書かせないための仕組み
+
+モデルには、`data/site.ts`・`data/menu.ts` から作った「事実シート」だけを、店の情報として渡します。
+書き上がった原稿は、公開の前に `lib/blog/validate.ts` が機械的に調べます。1つでも当てはまれば、公開しません。
+
+| 調べること | 例 |
+| --- | --- |
+| 店の段落の数値が、事実シートにあるか | 営業時間・台数・価格・距離が違えば不可 |
+| 事実シートに無い金額 | 「飲みものは400円から」 |
+| メニューに無い品 | 「カフェラテ」「パスタ」（飲みものの品名は、確かめられるまで書かせない） |
+| 確かめられていない設備・材料・人 | 席数、Wi-Fi、手作り、産地、店主のことば |
+| 限定メニュー・イベント・割引の作り話 | 「秋限定のケーキ」「ワークショップ」 |
+| 評価のことば | 人気店、絶品、口コミ、No.1 |
+| ほかの店の名前・比較 | チェーン店の名前、「ほかの店より」 |
+| 健康・美容への効果 | 「リラックス効果」 |
+| 確かめていない年・割合・世紀 | 題材の `facts` にある年だけ書ける |
+| 確かめていない施設名・人名 | 題材の `facts` にある名前だけ書ける |
+| 定型表現 | 「いかがでしたか」「ご紹介します」「ぜひ〜」、感嘆符、絵文字 |
+| 店の話の置き方 | 最後の見出しに店名／最後の節が店の話／「同店」「このカフェ」のような、店名を出さない言い方 |
+| 内部リンク | 固定ページへ2〜3本（いちばん関係の深いページを含む）、ほかの記事へ1〜3本。リンク切れ・「こちら」・1段落に3本以上は不可 |
+
+3回書き直しても通らなければ、別の題材でもう2回試し、それでも通らなければ、その日は公開しません（次の日に、別の題材から始めます）。
+
+### 二重に公開しないための仕組み
+
+- 今日の日付の自動投稿がすでにあれば、何もしません（GitHub にあって、まだデプロイされていない記事も数えます）。
+- 題材は日付から決まるので、同じ日に2回呼ばれても同じファイル名になります。同じ名前のファイルは、上書きしません。
+
+### 手で試す
+
+```bash
+# 手元で（API キーを .env.local に入れてから）
+npm run blog:dry-run                      # 書いて検査するが、保存しない
+BLOG_TOPIC=tiramisu-imi npm run blog:dry-run   # 題材を指定する
+npm run blog:generate                     # content/blog/ に保存する（コミットは自分で）
+
+# 本番で（コミットしない試し書き）
+curl -H "Authorization: Bearer <CRON_SECRET>" "https://<ドメイン>/api/cron/daily-post?dry=1"
+# 本番で、いますぐ1本公開する
+curl -H "Authorization: Bearer <CRON_SECRET>" "https://<ドメイン>/api/cron/daily-post"
+```
+
+API を呼ばずに仕組みだけを確かめるには、`npm run blog:selftest`（違反の検出・重複の防止・二重投稿の防止を、見本の原稿で確かめます）。
+
+### 公開前の原稿（content/drafts）
+
+公開の初日は、同じ日付の記事が並びすぎないよう、読みものを4本に絞ってあります。
+書き上げてある残りの3本は `content/drafts/` に置いてあり、サイトには出ません。
+
+| 原稿 | 内容 |
+| --- | --- |
+| `taco-rice-hassho.md` | タコライスの発祥 |
+| `satsumaimo-shun-itsu.md` | さつまいもの旬（秋〜冬に出すのが向いています） |
+| `mizusawashi-oshushi-chigai.md` | 水沢市と奥州市の違い、住所の「区」 |
+
+- **公開するとき** … `content/blog/<年>/<公開日>-<slug>.md` に移して push します（例: `content/blog/2026/2026-10-12-taco-rice-hassho.md`）。
+  日付はファイル名から決まるので、中身は直さなくてかまいません。
+- 原稿のある題材には、`data/blog-topics.ts` で `hold: true` を付けてあります。**この印がある題材は、自動投稿が書きません**（同じ題材を二重に書かないため）。
+  原稿を使わずに自動に任せるときは、原稿を消して `hold: true` を外します。
+- `npm run blog:selftest` が、原稿も公開済みの記事と同じ検査に通します。
+
+### 記事を手で書く・直す
+
+- 置き場所は `content/blog/<年>/<日付>-<slug>.md`。frontmatter の形は、既存の記事を見てください。
+- お知らせは `category: "news"`（ひな形は `content/blog/_template-news.md`）。お知らせは、自動では書きません。
+- 自動で書かれた記事を直したら、`updatedAt` を直した日にします。消したいときは、ファイルを消して push します。
+- 直したあとは `npm run blog:audit`（全記事を、自動投稿と同じ検査に通します）。
+
+### 費用の目安
+
+既定のモデルは `claude-haiku-4-5`（入力 $1／出力 $5、100万トークンあたり）。
+1本あたり、入力およそ6,000・出力およそ3,000トークンで **約 $0.02**、書き直しが入っても $0.1 以内の見込みです（月に数ドル以内）。
+実際の値は、Vercel のログの「トークン」の行と、Claude のコンソールで確かめてください。
+
+## 環境変数
+
+| 名前 | 必須 | 内容 |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | 本番で必須 | 公開 URL（例 `https://www.example.com`）。**入れるまで、全ページ noindex・sitemap は空** |
+| `ANTHROPIC_API_KEY` | 自動投稿に必須 | Claude API のキー |
+| `ANTHROPIC_MODEL` | 任意 | 使うモデル。省くと `claude-haiku-4-5` |
+| `CRON_SECRET` | 自動投稿に必須 | Vercel Cron の合言葉（16文字以上のでたらめな文字列） |
+| `GITHUB_TOKEN` | 自動投稿に必須 | Fine-grained personal access token（下の「GitHub 側の設定」） |
+| `GITHUB_OWNER` | 自動投稿に必須 | リポジトリの持ち主（ユーザー名か組織名） |
+| `GITHUB_REPO` | 自動投稿に必須 | リポジトリの名前 |
+| `GITHUB_BRANCH` | 任意 | コミットするブランチ。省くと `main` |
+| `GOOGLE_SITE_VERIFICATION` | 任意 | Search Console の確認用の値 |
+
+キーやトークンは、ソースコードにも `.env.example` にも書きません。足りない変数があると、自動投稿は何もせずに、足りない名前だけを返します。
+
+## Vercel 側の設定
+
+1. **プロジェクトを作る** … GitHub のリポジトリを Import する（Framework は Next.js のまま）。
+2. **環境変数を入れる** … Settings → Environment Variables。上の表のとおり。
+   `NEXT_PUBLIC_SITE_URL` は **Production だけ**に入れます（Preview に入れると、プレビューが検索結果に載るおそれがあります）。
+   入れたあとは、もう一度デプロイします（環境変数は、次のデプロイから効きます）。
+3. **ドメインをつなぐ** … Settings → Domains。`www` あり・なしのどちらかを主にして、もう片方を転送にします。
+   主にしたほうを `NEXT_PUBLIC_SITE_URL` に入れます。
+4. **Cron を確かめる** … `vercel.json` に書いてあるので、デプロイすると Settings → Cron Jobs に出ます。
+   - 時刻は `30 21 * * *`（UTC）＝ 日本時間の朝 6:30。Hobby プランでは、6:00〜6:59 のどこかで動きます。
+   - Cron が動くのは、Production のデプロイだけです。
+   - 時刻を変えるときは `vercel.json` を直して push します（Hobby プランは1日1回まで）。
+5. **関数の制限時間** … `/api/cron/daily-post` は 300 秒（Hobby プランの上限）に設定してあります。変更は要りません。
+6. **動いたかを見る** … Settings → Cron Jobs → View Logs。`[daily-post]` で始まる行に、題材・試行・トークンが出ます。
+
+`*.vercel.app` の URL で配信されるページには、設定に関係なく `X-Robots-Tag: noindex` が付きます（`next.config.ts`）。
+
+## GitHub 側の設定
+
+1. **リポジトリを作って push する。** ブランチ名は `main`（違う名前なら `GITHUB_BRANCH` に入れる）。
+2. **Fine-grained personal access token を作る**（Settings → Developer settings → Personal access tokens → Fine-grained tokens）。
+   - Resource owner … リポジトリの持ち主
+   - Repository access … **Only select repositories** で、このリポジトリ1つだけ
+   - Repository permissions … **Contents: Read and write** だけ（Metadata: Read-only は自動で付きます）
+   - Expiration … 期限を決める。切れる前に作り直して、Vercel の `GITHUB_TOKEN` を入れ替える
+3. **トークンは、Vercel につないだ GitHub アカウント本人のものにする。**
+   別の名義でコミットすると、Vercel の Hobby プランでは、そのコミットがデプロイされないことがあります。
+4. **`main` に保護ルールを付けるとき** … 「Pull request を必須にする」を付けると、自動投稿のコミットが断られます。
+   付けるなら、トークンの持ち主をルールの対象から外してください。
+
+## 点検のコマンド
+
+| コマンド | 見ること |
+| --- | --- |
+| `npm run check` | 下の5つをまとめて実行（push の前に） |
+| `npm run typecheck` / `npm run lint` | 型と書き方 |
+| `npm run seo:audit` | title・description の長さ、検索語の重なり、店舗情報の直書き、写真の alt |
+| `npm run blog:selftest` | 自動投稿の仕組み（違反の検出 約60種、題材の重なり、原稿の点検、二重投稿の防止） |
+| `npm run blog:audit` | 公開している全記事が、決まりに合っているか |
+| `npm run site:check` | 配信されている HTML（canonical・OGP・h1・構造化データ・リンク切れ・孤立ページ・NAP）。先に `next start -p 4321` |
+
+## 写真
+
+- 店から届いた元の写真は `assets/source-photos/` にあります（サイトには出ません）。
+- `npm run images:prepare` が、使う写真を `public/images/`（内容が分かるファイル名）と、SNS 用の `public/og/`（1200×630）に用意します。
+  人や車が写っている部分の切り落としも、ここで行います（`scripts/prepare-images.mjs`）。
+- 写真を足すときは、①元の写真を `assets/source-photos/` に置く ②`scripts/prepare-images.mjs` の `JOBS` に足す
+  ③`data/photo-meta.ts` と `data/photos.ts` に同じ名前で登録する（alt には、写っているものを書く）。
+- 表示のための縮小と AVIF / WebP への変換は、`next/image` が自動で行います。
+- 素材サイトの写真や、生成した画像は使っていません。Instagram の画像への直リンクもしていません。
+
+## つまずきやすいところ
+
+- **検索結果に出てこない** … `NEXT_PUBLIC_SITE_URL` が Production に入っているか。入れたあとに再デプロイしたか。
+  ページのソースに `noindex` が無いこと、`/sitemap.xml` に URL が並んでいることを確かめます。
+- **自動投稿が動かない** … Cron Jobs のログを見ます。
+  `not_configured`（環境変数が足りない）／`unauthorized`（`CRON_SECRET` が違う）／`failed`（検査を通らなかった。理由がログに出ます）。
+- **記事が書かれたのに公開されない** … GitHub にコミットがあるか → Vercel の Deployments に、そのコミットのデプロイがあるか。
+  無ければ、トークンの持ち主と Vercel の連携アカウントが同じかを確かめます。
+- **営業時間を直したのに、記事に古い時刻が残っている** … 記事は書いた日の内容のままです。`npm run blog:audit` が、いまの事実シートと合わない記事を挙げます。
+- **Tailwind の class が効かない** … `app/globals.css` の独自の class は、必ず `@layer components` の中に書きます（外に書くと、ユーティリティを打ち消します）。
+- **写真を端まで伸ばしたい** … `.wrap` の中の写真に `pull-l` / `pull-r` を付けます（`md:pull-l` のように、幅ごとに付け外しできます）。

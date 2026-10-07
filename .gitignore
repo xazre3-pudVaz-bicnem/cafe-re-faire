@@ -1,0 +1,25 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# env — APIキーやトークンは絶対にコミットしない（.env.example だけを管理する）
+.env
+.env.*
+!.env.example
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+/coverage
+
+# 自動投稿の試し書き
+/tmp-blog/

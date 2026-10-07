@@ -1,0 +1,853 @@
+/**
+ * 自動投稿の題材の台帳。
+ *
+ * 考え方
+ *   ・1題材＝1つの検索語（focusKeyword）＝1記事。同じ検索語の記事を2本作らない。
+ *   ・固定ページが受け持つ検索語（data/pages.ts の reservedKeywords）は、ここに置かない。
+ *     「水沢 カフェ」のような大きな語は固定ページが受け持ち、記事はそれより細かい疑問に1つずつ答える。
+ *   ・店のメニューにあるもの・店で実際にできることに結びつく題材だけを置く
+ *     （店が出していると確かめられていない飲みものや料理を、題材にしない）。
+ *   ・facts は、その題材で使ってよい「確かめた事実」。年号や固有名詞は、ここにあるものしか書かせない。
+ *     出どころは sources に残す。
+ *   ・months は、その記事を出してよい月（季節の題材）。
+ *
+ * 題材を足すときは、npm run blog:selftest を実行する（検索語の重なりを検査する）。
+ * ここの題材を書き終えたあとは、モデルが新しい題材を1つ提案し、同じ検査を通ったものだけを使う。
+ */
+import type { PhotoKind } from "./photo-meta";
+
+export type TopicCategory = "menu" | "cafe" | "mizusawa" | "season" | "journal";
+
+export type Topic = {
+  /** 記事の slug になる（半角英小文字とハイフン） */
+  id: string;
+  category: TopicCategory;
+  /** この記事が受け持つ検索語（空白区切り） */
+  focusKeyword: string;
+  /** 何に答える記事か、どの角度から書くか */
+  angle: string;
+  /** いちばん関係の深い固定ページ */
+  pillar: "/" | "/menu" | "/about" | "/access";
+  /** 見出し写真の種類（内容と関係のある写真だけを選ぶため） */
+  photoKinds: PhotoKind[];
+  /** 出してよい月（1〜12）。省くと通年 */
+  months?: number[];
+  /** この題材で使ってよい、確かめた事実 */
+  facts?: string[];
+  /** facts の出どころ */
+  sources?: string[];
+  /**
+   * 手書きの原稿が content/drafts/<id>.md にある題材。自動投稿は、この題材を書かない。
+   * 原稿を公開する（content/blog/ へ移す）か、原稿を消して自動に任せるときは、この印を外す。
+   */
+  hold?: boolean;
+};
+
+const CITY_ADDRESS_SOURCE = "https://www.city.oshu.iwate.jp/soshiki/2/1003/6/2977.html";
+
+export const topics: Topic[] = [
+  // =========================================================================
+  // メニューのこと（店のメニューにある料理・お菓子にまつわる話）
+  // =========================================================================
+  {
+    id: "terrine-cake-toha",
+    category: "menu",
+    focusKeyword: "テリーヌ ケーキ とは",
+    angle: "テリーヌという名前がもともと型のことで、そこから菓子の名前になったこと。チーズケーキやガトーショコラとの違いを、作り方と食感から説明する。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "taco-rice-hassho",
+    hold: true,
+    category: "menu",
+    focusKeyword: "タコライス 発祥",
+    angle: "タコライスがどこで生まれた料理か。タコスの具をごはんにのせる形になった理由と、ひと皿で食べやすい料理であること。",
+    pillar: "/menu",
+    photoKinds: ["plate", "takeout"],
+    facts: [
+      "タコライスは1984年に沖縄県金武町で生まれた",
+      "金武町の飲食店「パーラー千里」の儀保松三さんが考案したとされる",
+      "店はアメリカ軍の基地の近くにあり、ボリュームのあるタコスを手ごろな値段でおなかいっぱい食べてもらいたい、という考えから生まれたと伝えられる",
+    ],
+    sources: ["https://rurubu.jp/andmore/article/17963"],
+  },
+  {
+    id: "gateau-chocolat-brownie-chigai",
+    category: "menu",
+    focusKeyword: "ガトーショコラ ブラウニー 違い",
+    angle: "ガトーショコラ（フランス語でチョコレートの菓子）とブラウニーの違いを、生まれた国・生地・食感から説明する。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "tiramisu-imi",
+    category: "menu",
+    focusKeyword: "ティラミス 意味",
+    angle: "ティラミスという名前の意味（イタリア語で「私を引き上げて」）と、どんな菓子か。ムース仕立てにすると何が変わるか。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "cheesecake-shurui-chigai",
+    category: "menu",
+    focusKeyword: "チーズケーキ 種類 違い",
+    angle: "ベイクド・レア・スフレ・バスクの違いを、焼くか冷やすか・食感・見た目で整理する。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "sweet-potato-cheesecake-kumiawase",
+    category: "menu",
+    focusKeyword: "スイートポテト チーズケーキ 組み合わせ",
+    angle: "さつまいもとチーズがなぜ合うのか。甘さと塩気、ほくほくとなめらかさの組み合わせとして説明する。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "caramel-karameru-chigai",
+    category: "menu",
+    focusKeyword: "キャラメル カラメル 違い",
+    angle: "キャラメルとカラメルという2つのことばの使い分け。砂糖を焦がすと何が起きるか。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "matcha-ryokucha-chigai",
+    category: "menu",
+    focusKeyword: "抹茶 緑茶 違い",
+    angle: "抹茶と緑茶（煎茶）の違いを、育て方・加工・飲み方から説明する。菓子に抹茶が使われる理由。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "crumble-toha",
+    category: "menu",
+    focusKeyword: "クランブル とは お菓子",
+    angle: "クランブルがどんな生地か（そぼろ状）。ケーキにのせると食感にどんな差が出るか。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "parfait-pafe-chigai",
+    category: "menu",
+    focusKeyword: "パルフェ パフェ 違い",
+    angle: "フランス語の parfait（完全な）がもとのことばであること。日本でいうパフェとの違い。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "mousse-cake-tokucho",
+    category: "menu",
+    focusKeyword: "ムース ケーキ 特徴",
+    angle: "ムース（フランス語で泡）がどんな菓子か。焼き菓子との口あたりの違い。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "assiette-dessert-toha",
+    category: "menu",
+    focusKeyword: "皿盛りデザート とは",
+    angle: "ケーキを皿に盛り、クリームやソースを添えて出す「皿盛りデザート（アシェット・デセール）」という考え方。持ち帰りのケーキとの違い。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "slate-plate-cake",
+    category: "menu",
+    focusKeyword: "スレートプレート ケーキ",
+    angle: "黒い石の皿にケーキを盛ると、色と形がどう見えるか。皿の色と料理の見え方の関係。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "omurice-hassho",
+    category: "menu",
+    focusKeyword: "オムライス 発祥",
+    angle: "オムライスが日本で生まれた洋食であること。発祥には東京説と大阪説があること。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+    facts: [
+      "オムライスは日本で生まれた洋食",
+      "発祥には諸説あり、東京・銀座の煉瓦亭と、大阪の北極星の名がよく挙がる",
+      "どちらが元祖かは定まっていない",
+    ],
+  },
+  {
+    id: "hamburg-hamburger-chigai",
+    category: "menu",
+    focusKeyword: "ハンバーグ ハンバーガー 違い",
+    angle: "ハンバーグとハンバーガーの違い。ハンバーグが日本の洋食として定着したこと。名前のもとがドイツのハンブルクであること。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+  {
+    id: "roast-beef-toha",
+    category: "menu",
+    focusKeyword: "ローストビーフ とは",
+    angle: "ローストビーフがどんな料理か（牛肉のかたまりを焼き、薄く切る。イギリスの料理）。ステーキとの違い。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+  {
+    id: "one-plate-lunch-miryoku",
+    category: "menu",
+    focusKeyword: "ワンプレート ランチ 魅力",
+    angle: "ごはん・おかず・サラダをひと皿に盛る昼食のよさ。食べる側から見た利点。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+  {
+    id: "youbi-gawari-lunch",
+    category: "menu",
+    focusKeyword: "曜日替わり ランチ 日替わり 違い",
+    angle: "曜日ごとに内容が決まっているランチと、日替わりランチの違い。曜日で決まっていると予定を立てやすいこと。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+  {
+    id: "pizza-pizza-chigai",
+    category: "menu",
+    focusKeyword: "ピザ ピッツァ 違い",
+    angle: "ピザとピッツァということばの違い（英語読みとイタリア語読み）。生地の厚さや焼き方の違い。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+  {
+    id: "cake-erabikata-cafe",
+    category: "menu",
+    focusKeyword: "ケーキ 選び方 迷う",
+    angle: "ショーケースの前で迷ったときの決め方。濃さ・食感・食後かどうか・分け合うかどうか、で選ぶ。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "warabimochi-toha",
+    category: "menu",
+    focusKeyword: "わらび餅 とは 原料",
+    angle: "わらび餅が何から作られるか（わらび粉。いまは別のでんぷんを使うものも多い）。黒蜜やきな粉、抹茶との組み合わせ。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "kuromitsu-toha",
+    category: "menu",
+    focusKeyword: "黒蜜 とは",
+    angle: "黒蜜が何か（黒糖を溶かして煮つめた蜜）。はちみつやメープルシロップとの違い。和菓子と洋菓子の両方に使われること。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "chantilly-cream-toha",
+    category: "menu",
+    focusKeyword: "シャンティ クリーム とは",
+    angle: "ケーキに添える泡立てた生クリーム（クレーム・シャンティイ）のこと。添えるクリームがあると、濃いケーキがどう食べやすくなるか。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "cake-mint-taberu",
+    category: "menu",
+    focusKeyword: "ケーキ ミント 食べる",
+    angle: "ケーキに飾ってあるミントの葉は食べてよいのか。飾りの役割（香りと色）。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "berry-shurui-chigai",
+    category: "menu",
+    focusKeyword: "ベリー 種類 違い",
+    angle: "いちご・ブルーベリー・ラズベリーの違い（味・色・使われ方）。チョコレートやチーズと合わせる理由。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "dessert-sweets-chigai",
+    category: "menu",
+    focusKeyword: "デザート スイーツ 違い",
+    angle: "デザートとスイーツということばの違い（食後に食べるもの／甘いもの全般）。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "avocado-tabegoro",
+    category: "menu",
+    focusKeyword: "アボカド 食べごろ 見分け方",
+    angle: "アボカドの食べごろの見分け方（皮の色・さわった感じ）。ごはんの料理に合う理由。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+  {
+    id: "cake-tabekata-fork",
+    category: "menu",
+    focusKeyword: "ケーキ 食べ方 フォーク",
+    angle: "ケーキをきれいに食べるコツ（とがった側から、倒れそうなら先に寝かせる）。皿に添えたソースの使い方。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "lunch-plate-moritsuke",
+    category: "menu",
+    focusKeyword: "ランチプレート 盛り付け コツ",
+    angle: "ひと皿に盛るときの考え方（高さ・色・余白）。家で試せる範囲で。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+  },
+
+  // =========================================================================
+  // カフェの時間（カフェの使い方。店で実際にできることに結びつける）
+  // =========================================================================
+  {
+    id: "cafe-cake-dake",
+    category: "cafe",
+    focusKeyword: "カフェ ケーキだけ",
+    angle: "食事をせずに、ケーキだけ・飲みものだけでカフェに入ってよいのか。気がねせずに使うための考え方。",
+    pillar: "/menu",
+    photoKinds: ["cake", "interior"],
+  },
+  {
+    id: "cafe-hitori-hairikata",
+    category: "cafe",
+    focusKeyword: "カフェ 一人 入りにくい",
+    angle: "はじめての店に一人で入るときの気の持ち方。入る前に調べておくと楽になること（営業時間・支払い・注文のしかた）。",
+    pillar: "/about",
+    photoKinds: ["interior", "exterior"],
+  },
+  {
+    id: "cafe-taizai-jikan",
+    category: "cafe",
+    focusKeyword: "カフェ 滞在時間 目安",
+    angle: "カフェにどのくらいいてよいのか。混んでいるときの配慮と、ラストオーダーの時刻を見ておくこと。",
+    pillar: "/access",
+    photoKinds: ["interior"],
+  },
+  {
+    id: "qr-order-yarikata",
+    category: "cafe",
+    focusKeyword: "QRコード 注文 やり方",
+    angle: "席のQRコードを読み取ってスマートフォンで注文する方式の流れと、とまどいやすい点。",
+    pillar: "/menu",
+    photoKinds: ["interior"],
+  },
+  {
+    id: "instagram-dm-yoyaku",
+    category: "cafe",
+    focusKeyword: "インスタ DM 予約 書き方",
+    angle: "InstagramのDMで店に予約を頼むとき、何を書けば一度で伝わるか（日にち・時間・人数・名前）。返事を待つときの心がまえ。",
+    pillar: "/access",
+    photoKinds: ["exterior", "interior"],
+  },
+  {
+    id: "takeout-denwa-chumon",
+    category: "cafe",
+    focusKeyword: "テイクアウト 電話 注文 伝え方",
+    angle: "テイクアウトを電話で先に注文するとき、伝えること（品・数・受け取りの時間・名前）。",
+    pillar: "/menu",
+    photoKinds: ["takeout"],
+  },
+  {
+    id: "asa-cafe-sugoshikata",
+    category: "cafe",
+    focusKeyword: "朝カフェ 過ごし方",
+    angle: "朝の時間をカフェで過ごすよさ。一日の予定の前に寄る、という使い方。",
+    pillar: "/access",
+    photoKinds: ["interior", "exterior"],
+  },
+  {
+    id: "cafe-lunch-komu-jikan",
+    category: "cafe",
+    focusKeyword: "カフェ ランチ 混む 時間",
+    angle: "一般に昼どきのカフェが混みやすい時間帯と、ずらして行く考え方。ラストオーダーの時刻に気をつけること。",
+    pillar: "/access",
+    photoKinds: ["plate", "interior"],
+  },
+  {
+    id: "nichiyo-yugata-cafe",
+    category: "cafe",
+    focusKeyword: "日曜 夕方 カフェ",
+    angle: "日曜の夕方をカフェで過ごす、という使い方。休みの終わりに甘いものを食べる時間。",
+    pillar: "/access",
+    photoKinds: ["cake", "interior"],
+  },
+  {
+    id: "cafe-dokusho-manner",
+    category: "cafe",
+    focusKeyword: "カフェ 読書 マナー",
+    angle: "カフェで本を読むときの気づかい（混んでいる時間・追加の注文・席の使い方）。",
+    pillar: "/about",
+    photoKinds: ["interior"],
+  },
+  {
+    id: "cafe-pc-sagyo-manner",
+    category: "cafe",
+    focusKeyword: "カフェ パソコン 作業 マナー",
+    angle: "カフェでパソコン作業をしたいとき、先に確かめること（店が認めているか・電源・混む時間）。",
+    pillar: "/about",
+    photoKinds: ["interior"],
+  },
+  {
+    id: "cafe-kozure-manner",
+    category: "cafe",
+    focusKeyword: "カフェ 子連れ マナー",
+    angle: "子どもと一緒にカフェへ行くとき、先に確かめておくと安心なこと。",
+    pillar: "/access",
+    photoKinds: ["interior", "plate"],
+  },
+  {
+    id: "cafe-shashin-manner",
+    category: "cafe",
+    focusKeyword: "カフェ 写真 撮影 マナー",
+    angle: "カフェで料理や店内の写真を撮るときの気づかい（ほかの客を写さない・音・店の決まり）。",
+    pillar: "/about",
+    photoKinds: ["cake", "interior"],
+  },
+  {
+    id: "cafe-paypay-shiharai",
+    category: "cafe",
+    focusKeyword: "カフェ PayPay 支払い",
+    angle: "カフェでの支払い方法の確かめ方。現金のほかに何が使えるかを、行く前に知っておくと楽なこと。",
+    pillar: "/access",
+    photoKinds: ["interior", "exterior"],
+  },
+  {
+    id: "cafe-kaikei-betsubetsu",
+    category: "cafe",
+    focusKeyword: "カフェ 会計 別々",
+    angle: "何人かでカフェに行ったときの会計のしかた。別々にしたいときの頼み方。",
+    pillar: "/access",
+    photoKinds: ["interior"],
+  },
+  {
+    id: "last-order-imi",
+    category: "cafe",
+    focusKeyword: "ラストオーダー 意味",
+    angle: "ラストオーダー（L.O.）の意味と、閉店時刻との違い。何時までに入ればよいかの考え方。",
+    pillar: "/access",
+    photoKinds: ["interior", "exterior"],
+  },
+  {
+    id: "futeikyu-toha",
+    category: "cafe",
+    focusKeyword: "不定休 とは 調べ方",
+    angle: "不定休ということばの意味と、行く前に営業日を確かめる方法。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+  },
+  {
+    id: "cafe-kissaten-chigai",
+    category: "cafe",
+    focusKeyword: "カフェ 喫茶店 違い",
+    angle: "カフェと喫茶店の違い。以前は営業許可の種類が違ったが、いまは同じであること。呼び方は店が決めていること。",
+    pillar: "/about",
+    photoKinds: ["interior", "exterior"],
+    facts: [
+      "以前は「喫茶店営業」と「飲食店営業」という別の営業許可があった",
+      "2021年6月1日の食品衛生法の改正で、「喫茶店営業」は「飲食店営業」にまとめられた",
+    ],
+    sources: ["https://www.mhlw.go.jp/content/11121000/000562268.pdf"],
+  },
+  {
+    id: "takeout-bento-itsumade",
+    category: "cafe",
+    focusKeyword: "テイクアウト 弁当 いつまで 食べられる",
+    angle: "持ち帰った弁当をいつまでに食べればよいか。ふたのシールや店の案内を見ること、持ち歩く時間を短くすること。",
+    pillar: "/menu",
+    photoKinds: ["takeout"],
+  },
+  {
+    id: "oyatsu-jikan-cafe",
+    category: "cafe",
+    focusKeyword: "おやつ 時間 カフェ",
+    angle: "午後の甘いものの時間をカフェで過ごすこと。店の閉まる時刻を見て、行く時間を決めること。",
+    pillar: "/access",
+    photoKinds: ["cake"],
+  },
+  {
+    id: "instagram-highlight-mikata",
+    category: "cafe",
+    focusKeyword: "インスタ ハイライト 見方 お店",
+    angle: "店のInstagramのハイライト（プロフィールの下の丸い印）の見方。営業日やメニューを確かめるのに使えること。",
+    pillar: "/access",
+    photoKinds: ["exterior", "interior"],
+    facts: ["Cafe Re faireのInstagramのハイライトには「定休日」「曜日ランチ」「店内」「テイクアウト」がある"],
+  },
+  {
+    id: "takeout-tennai-zeiritsu",
+    category: "cafe",
+    focusKeyword: "テイクアウト 店内 税率 違い",
+    angle: "持ち帰りと店内飲食で、消費税の税率が違うこと。表示されている価格の見方（税込かどうか）。",
+    pillar: "/menu",
+    photoKinds: ["takeout"],
+    facts: ["2019年10月1日から、持ち帰りの飲食料品の消費税は8%（軽減税率）、店内での飲食は10%"],
+    sources: ["https://www.nta.go.jp/taxes/shiraberu/zeimokubetsu/shohi/keigenzeiritsu/index.htm"],
+  },
+
+  // =========================================================================
+  // 水沢・奥州のこと（facts にある事実だけを書く。年号・距離・施設名を足さない）
+  // =========================================================================
+  {
+    id: "mizusawa-eki-mizusawaesashi-eki-chigai",
+    category: "mizusawa",
+    focusKeyword: "水沢駅 水沢江刺駅 違い",
+    angle: "名前の似た2つの駅の違い（在来線と新幹線）。2つの駅は線路でつながっていないこと。行き先に合わせてどちらで降りるか。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "水沢駅はJR東北本線の駅。1890年11月1日に開業した",
+      "水沢江刺駅は東北新幹線の駅。1985年3月14日に開業した",
+      "水沢江刺駅は、地元の要望でつくられた駅（請願駅）",
+      "水沢江刺駅の住所は奥州市水沢羽田町",
+      "2つの駅は別の場所にあり、線路でつながっていない。直線で約3.7km離れている",
+    ],
+    sources: ["https://pedia.3rd-in.co.jp/wiki/%E6%B0%B4%E6%B2%A2%E6%B1%9F%E5%88%BA%E9%A7%85"],
+  },
+  {
+    id: "mizusawashi-oshushi-chigai",
+    hold: true,
+    category: "mizusawa",
+    focusKeyword: "水沢市 奥州市 違い",
+    angle: "「水沢市」がいまは無く、奥州市の一部であること。住所に「水沢区」と書いてあるものと「水沢」だけのものがある理由。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "2006年2月20日、水沢市・江刺市・前沢町・胆沢町・衣川村が合併して奥州市になった",
+      "合併のあと、住所は「奥州市水沢区〜」のように「区」を付けて書いた",
+      "2018年4月1日から、住所の「区」が無くなり「奥州市水沢〜」と書くようになった",
+      "水沢市は1954年4月1日に、水沢町・佐倉河村・真城村・姉体村・羽田村・黒石村が合併してできた",
+    ],
+    sources: [CITY_ADDRESS_SOURCE, "https://kotobank.jp/word/%E6%B0%B4%E6%B2%A2-138606"],
+  },
+  {
+    id: "mizusawa-shinjo-yomikata",
+    category: "mizusawa",
+    focusKeyword: "水沢真城 読み方",
+    angle: "「真城」の読み方と、住所の書き方。昔は真城村という村だったこと。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "奥州市水沢真城は「みずさわしんじょう」と読む",
+      "郵便番号は023-0841",
+      "真城村は、1954年4月1日に水沢町などと合併して水沢市になった",
+      "2018年4月1日から、住所は「奥州市水沢真城〜」と書く（それまでは「奥州市水沢区真城〜」）",
+    ],
+    sources: ["https://www.post.japanpost.jp/cgi-zip/zipcode.php?pref=3", CITY_ADDRESS_SOURCE],
+  },
+  {
+    id: "kokudo-343-dokokara",
+    category: "mizusawa",
+    focusKeyword: "国道343号 どこからどこまで",
+    angle: "国道343号がどこを結ぶ道か。水沢の側から見た、この道の役割。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: ["国道343号は、岩手県陸前高田市と奥州市を結ぶ国道", "途中、一関市を通る"],
+    sources: ["https://wiki.aaroads.com/wiki/Japan_National_Route_343"],
+  },
+  {
+    id: "mizusawa-san-ijin",
+    category: "mizusawa",
+    focusKeyword: "水沢 三偉人",
+    angle: "水沢の三偉人と呼ばれる3人が、それぞれ何をした人か。3人の記念館が水沢にあること。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "水沢の三偉人は、高野長英・後藤新平・斎藤實の3人",
+      "高野長英は江戸時代の蘭学者・医者",
+      "後藤新平は、東京市長などを務めた政治家。関東大震災のあとの復興計画で知られる",
+      "斎藤實は、海軍大臣や内閣総理大臣を務めた",
+      "水沢には、高野長英記念館・後藤新平記念館・斎藤實記念館がある",
+    ],
+  },
+  {
+    id: "nambu-tekki-mizusawa",
+    category: "mizusawa",
+    focusKeyword: "南部鉄器 水沢",
+    angle: "南部鉄器が、盛岡と水沢の2つの産地で作られていること。鉄瓶や急須など、身近な道具としての南部鉄器。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: ["南部鉄器は、岩手県の盛岡市と奥州市水沢で作られる鉄器", "南部鉄器は、国の伝統的工芸品に指定されている"],
+  },
+  {
+    id: "mizusawa-ido-kansokujo",
+    category: "mizusawa",
+    focusKeyword: "水沢 緯度観測所 Z項",
+    angle: "水沢に緯度観測所が置かれた経緯と、木村栄によるZ項の発見。いまの国立天文台と奥州宇宙遊学館。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "1899年、水沢に臨時緯度観測所が置かれた",
+      "初代所長の木村栄が、1902年に「Z項」を発見した",
+      "いまは国立天文台の水沢VLBI観測所になっている",
+      "旧緯度観測所の本館を活用した奥州宇宙遊学館が、2008年4月に開館した",
+    ],
+    sources: ["https://tabi-mag.jp/iw0228/"],
+  },
+  {
+    id: "hidaka-hibuse-matsuri-toha",
+    category: "mizusawa",
+    focusKeyword: "日高火防祭 とは",
+    angle: "水沢の春の祭り、日高火防祭がどんな祭りか。はやし屋台が町を進むこと。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    months: [3, 4],
+    facts: [
+      "日高火防祭は、奥州市水沢で春（4月の終わりごろ）に行われる祭り",
+      "火防（ひぶせ）は、火事を防ぐことを願う意味",
+      "はやし屋台が町を進む。屋台囃子は岩手県の無形民俗文化財に指定されている",
+      "日取りは年によって確かめる必要がある",
+    ],
+    sources: ["https://tabi-mag.jp/hidaka-hibuse/"],
+  },
+  {
+    id: "oshushi-meibutsu",
+    category: "mizusawa",
+    focusKeyword: "奥州市 名物",
+    angle: "奥州市の名物を、地域ごとに整理する（水沢の南部鉄器、前沢の前沢牛、江刺の江刺りんごと岩谷堂箪笥）。",
+    pillar: "/",
+    photoKinds: ["exterior"],
+    facts: [
+      "奥州市水沢は南部鉄器の産地",
+      "奥州市前沢は、前沢牛で知られる",
+      "奥州市江刺は、江刺りんごと岩谷堂箪笥で知られる",
+      "岩谷堂箪笥と南部鉄器は、国の伝統的工芸品に指定されている",
+    ],
+  },
+  {
+    id: "isawa-sankyo-shuraku",
+    category: "mizusawa",
+    focusKeyword: "胆沢 散居集落",
+    angle: "奥州市胆沢の散居集落がどんな風景か。家を囲む屋敷林のこと。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "奥州市胆沢の胆沢扇状地には、家が1軒ずつ離れて建つ散居集落が広がる",
+      "家のまわりの屋敷林を「エグネ」、薪を積んだ垣を「キヅマ」と呼ぶ",
+      "富山県の砺波平野、島根県の出雲平野とともに、散居集落の代表として挙げられる",
+    ],
+  },
+  {
+    id: "esashi-fujiwara-no-sato-toha",
+    category: "mizusawa",
+    focusKeyword: "えさし藤原の郷 とは",
+    angle: "奥州市江刺にある歴史公園、えさし藤原の郷がどんな場所か。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    facts: [
+      "えさし藤原の郷は、奥州市江刺にある歴史公園",
+      "平安時代の建物を再現している",
+      "映画やドラマの撮影に使われている",
+    ],
+  },
+
+  // =========================================================================
+  // 季節のこと（months の月にだけ出す）
+  // =========================================================================
+  {
+    id: "satsumaimo-shun-itsu",
+    hold: true,
+    category: "season",
+    focusKeyword: "さつまいも 旬 いつ",
+    angle: "さつまいもの旬。収穫の時期と、寝かせて甘くなる時期が違うこと。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [9, 10, 11, 12],
+  },
+  {
+    id: "satsumaimo-hinshu-chigai",
+    category: "season",
+    focusKeyword: "さつまいも 品種 違い",
+    angle: "ねっとり系・ほくほく系・しっとり系という、さつまいもの食感の分け方。菓子に向く食感。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [10, 11, 12, 1],
+  },
+  {
+    id: "matcha-kuchikiri",
+    category: "season",
+    focusKeyword: "抹茶 口切り 秋",
+    angle: "春に摘んだ茶を寝かせ、秋に茶壺の封を切る「口切り」のこと。抹茶にとっての秋。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [10, 11],
+  },
+  {
+    id: "fuyu-cafe-sugoshikata",
+    category: "season",
+    focusKeyword: "寒い日 カフェ 冬",
+    angle: "寒い日にカフェで過ごす時間。あたたかい店内で甘いものを食べること。",
+    pillar: "/about",
+    photoKinds: ["interior", "cake"],
+    months: [12, 1, 2],
+  },
+  {
+    id: "yukimichi-cafe-kuruma",
+    category: "season",
+    focusKeyword: "雪道 運転 出かける 準備",
+    angle: "雪の日に車で出かけるときの、一般的な準備（時間に余裕をもつ・冬用タイヤ・駐車場の有無を調べる）。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    months: [12, 1, 2],
+  },
+  {
+    id: "valentine-gateau-chocolat",
+    category: "season",
+    focusKeyword: "バレンタイン ガトーショコラ",
+    angle: "バレンタインの時季にチョコレートの菓子が合う理由。自分のために食べるチョコレートの菓子。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [1, 2],
+  },
+  {
+    id: "ichigo-shun-itsu",
+    category: "season",
+    focusKeyword: "いちご 旬 いつ",
+    angle: "いちごの旬。店に並ぶ時期と、露地で実る時期が違うこと。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [1, 2, 3, 4],
+  },
+  {
+    id: "white-day-okaeshi-cake",
+    category: "season",
+    focusKeyword: "ホワイトデー お返し ケーキ",
+    angle: "ホワイトデーのお返しに、一緒にカフェでケーキを食べる、という考え方。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [3],
+  },
+  {
+    id: "hanami-kaeri-cafe",
+    category: "season",
+    focusKeyword: "花見 帰り カフェ",
+    angle: "花見のあとにカフェに寄る、という過ごし方。歩いたあとの休憩として。",
+    pillar: "/access",
+    photoKinds: ["interior", "cake"],
+    months: [4],
+    facts: ["奥州市水沢の水沢公園は、桜の名所として知られる"],
+  },
+  {
+    id: "haha-no-hi-cafe-lunch",
+    category: "season",
+    focusKeyword: "母の日 カフェ ランチ",
+    angle: "母の日に、家族でカフェのランチに出かける過ごし方。予約と営業日を先に確かめること。",
+    pillar: "/access",
+    photoKinds: ["plate", "cake"],
+    months: [4, 5],
+  },
+  {
+    id: "shincha-matcha-jiki",
+    category: "season",
+    focusKeyword: "新茶 時期 抹茶",
+    angle: "新茶の時期と、抹茶になる茶（碾茶）の時期の違い。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [5],
+  },
+  {
+    id: "tsuyu-ame-cafe",
+    category: "season",
+    focusKeyword: "雨の日 カフェ 過ごし方",
+    angle: "雨の日をカフェで過ごす時間。車で行ける店・駐車場のある店を選ぶこと。",
+    pillar: "/access",
+    photoKinds: ["interior"],
+    months: [6, 7],
+  },
+  {
+    id: "chichi-no-hi-cafe",
+    category: "season",
+    focusKeyword: "父の日 カフェ",
+    angle: "父の日に、家族でカフェに出かける過ごし方。食事と甘いものを一緒に。",
+    pillar: "/menu",
+    photoKinds: ["plate"],
+    months: [6],
+  },
+  {
+    id: "blueberry-shun-itsu",
+    category: "season",
+    focusKeyword: "ブルーベリー 旬 いつ",
+    angle: "ブルーベリーの旬（夏）と、菓子に使われる理由。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [6, 7, 8],
+  },
+  {
+    id: "natsu-tsumetai-dessert",
+    category: "season",
+    focusKeyword: "夏 冷たい デザート",
+    angle: "暑い日に食べたい、冷やして食べる菓子（ムースなど）のこと。",
+    pillar: "/menu",
+    photoKinds: ["cake"],
+    months: [7, 8],
+  },
+  {
+    id: "obon-kisei-cafe",
+    category: "season",
+    focusKeyword: "お盆 帰省 カフェ",
+    angle: "お盆に帰省したとき、家族や友人とカフェで過ごす時間。お盆の営業日は先に確かめること。",
+    pillar: "/access",
+    photoKinds: ["interior", "exterior"],
+    months: [8],
+  },
+  {
+    id: "keiro-no-hi-cafe",
+    category: "season",
+    focusKeyword: "敬老の日 カフェ",
+    angle: "敬老の日に、祖父母とカフェに出かける過ごし方。駐車場のある店だと出かけやすいこと。",
+    pillar: "/access",
+    photoKinds: ["plate", "cake"],
+    months: [9],
+  },
+  {
+    id: "nenmatsu-nenshi-eigyo-shirabekata",
+    category: "season",
+    focusKeyword: "年末年始 カフェ 営業 調べ方",
+    angle: "年末年始に店が開いているかを確かめる方法（店のInstagram・Googleマップ・電話）。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+    months: [12],
+  },
+
+  // =========================================================================
+  // 店のこと（写真と、確かめた事実から書けることだけ）
+  // =========================================================================
+  {
+    id: "mizuiro-no-tobira-mejirushi",
+    category: "journal",
+    focusKeyword: "Cafe Re faire 目印",
+    angle: "はじめて来る人のために、外から見える目印（水色の看板・水色の扉・オリーブの鉢）を順に説明する。",
+    pillar: "/access",
+    photoKinds: ["exterior"],
+  },
+  {
+    id: "refaire-imi-france-go",
+    category: "journal",
+    focusKeyword: "refaire 意味 フランス語",
+    angle: "フランス語の refaire ということばの意味と成り立ち（re＋faire）。店名の読み方。店名に込めた考えは、確かめられていないので書かない。",
+    pillar: "/about",
+    photoKinds: ["exterior"],
+    facts: [
+      "refaire はフランス語の動詞で、「もう一度つくる」「やり直す」という意味",
+      "re は「ふたたび」を表す接頭辞、faire は「つくる・する」という動詞",
+      "店名の Cafe Re faire は「カフェ ルフェール」と読む（看板にふりがながある）",
+    ],
+  },
+  {
+    id: "olive-hachiue-genkan",
+    category: "journal",
+    focusKeyword: "オリーブ 鉢植え 玄関",
+    angle: "玄関にオリーブの鉢を置くこと。オリーブが平和の象徴とされること。寒い土地での鉢植えの一般的な注意。",
+    pillar: "/about",
+    photoKinds: ["exterior"],
+  },
+  {
+    id: "one-line-art-toha",
+    category: "journal",
+    focusKeyword: "一筆書き アート とは",
+    angle: "1本の線で描く絵（ワンラインアート）のこと。店の壁に飾ってある、コーヒーカップの線画。",
+    pillar: "/about",
+    photoKinds: ["interior"],
+  },
+];
+
+export function topicById(id: string): Topic | undefined {
+  return topics.find((t) => t.id === id);
+}

@@ -1,0 +1,47 @@
+{
+  "name": "cafe-refaire",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "images:prepare": "node scripts/prepare-images.mjs",
+    "blog:generate": "tsx scripts/blog/generate.ts",
+    "blog:dry-run": "cross-env DRY_RUN=1 tsx scripts/blog/generate.ts",
+    "blog:selftest": "tsx scripts/blog/selftest.ts",
+    "blog:audit": "tsx scripts/blog/audit.ts",
+    "seo:audit": "tsx scripts/seo-audit.ts",
+    "site:check": "tsx scripts/check-site.ts",
+    "check": "npm run typecheck && npm run lint && npm run seo:audit && npm run blog:selftest && npm run blog:audit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "budoux": "^0.9.3",
+    "gray-matter": "^4.0.3",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}
