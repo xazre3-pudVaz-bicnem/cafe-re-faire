@@ -53,6 +53,7 @@ export function CategoryPage({ r }: { r: Resolved }) {
     <>
       <PageHead
         crumbs={crumbs}
+        label="Journal"
         title={
           <>
             {r.category.name}
@@ -61,7 +62,7 @@ export function CategoryPage({ r }: { r: Resolved }) {
         }
         lead={r.n === 1 ? r.category.description : undefined}
       />
-      <section className="section no-cv">
+      <section className="section">
         <BlogIndex posts={paginate(r.all, r.n)} total={r.all.length} page={r.n} basePath={r.base} currentCategory={r.category.slug} />
       </section>
       <JsonLd

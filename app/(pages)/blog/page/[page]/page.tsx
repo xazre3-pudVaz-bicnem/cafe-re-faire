@@ -53,13 +53,14 @@ export default async function BlogPagedPage({ params }: Props) {
     <>
       <PageHead
         crumbs={crumbs}
+        label="Journal"
         title={
           <>
             ブログ<span className="ml-[0.8em] text-[0.6em] tracking-[0.1em] text-mute">{r.n}ページ目</span>
           </>
         }
       />
-      <section className="section no-cv">
+      <section className="section">
         <BlogIndex posts={paginate(r.all, r.n)} total={r.all.length} page={r.n} basePath={pages.blog.path} />
       </section>
       <JsonLd

@@ -5,13 +5,17 @@
  * 役割          … どこの・いつからの・どんな店か。店の外と中を、写真で見せる
  * 書かないこと   … 店主の考えや来歴（確かめられていない。届いたら「店のはじまり」として足す）。
  *                  メニューの細かい説明は /menu、行き方は /access に任せる
+ *
+ * 組み方：写真を大きく、見出しを大きく、文章は短く。余白を広く取る。
  */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Onward } from "@/components/sections/Onward";
 import { PageHead } from "@/components/sections/PageHead";
 import { JsonLd } from "@/components/ui/JsonLd";
+import { Lines } from "@/components/ui/Lines";
 import { Photo } from "@/components/ui/Photo";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { cakePrice, cakes } from "@/data/menu";
 import { pages } from "@/data/pages";
 import { photos } from "@/data/photos";
@@ -23,12 +27,33 @@ const page = pages.about;
 
 export const metadata: Metadata = pageMetadata(page);
 
+/** 区画の小さな番号（01 Outside のような） */
+function Index({ n, children }: { n: string; children: string }) {
+  return (
+    <p className="t-label" data-reveal="wipe">
+      <span className="inline-block">
+        <span className="n">{n}</span>
+        {children}
+      </span>
+    </p>
+  );
+}
+
 export default function AboutPage() {
   return (
     <>
       <PageHead
         crumbs={crumbsFor(page)}
-        title={<>{site.name}について</>}
+        label="About"
+        title={
+          <>
+            {/* 店名は、看板と同じ組み方（欧文の書体）で */}
+            <span className="latin text-[1.16em] tracking-[-0.01em]">
+              <Wordmark />
+            </span>
+            について
+          </>
+        }
         lead={
           <>
             {site.name}（{site.reading}）は、{site.address.region}
@@ -39,23 +64,24 @@ export default function AboutPage() {
       />
 
       {/* ---- 外から ---- */}
-      <section className="section no-cv">
+      <section className="section">
         <div className="wrap">
           <Photo
             photo={photos.exterior}
             ratio="16/9"
             ratioSp="4/3"
-            className="max-md:pull-r md:pull-l md:mr-[8%]"
-            sizes="(max-width: 767px) 94vw, 86vw"
+            className="pull-l md:mr-[8%]"
+            sizes="(max-width: 767px) 94vw, 88vw"
             quality={85}
+            parallax={48}
             priority
           />
 
-          <div className="mt-14 grid gap-y-12 md:mt-20 md:grid-cols-12 md:gap-x-8">
+          <div className="mt-14 grid gap-y-12 md:mt-24 md:grid-cols-12 md:gap-x-8">
             <div className="md:col-span-5">
-              <h2 className="t-h2">
-                <span className="ib">目印は、</span>
-                <span className="ib">水色の扉と看板。</span>
+              <Index n="01">Outside</Index>
+              <h2 className="t-h2 mt-5" data-reveal="lines">
+                <Lines lines={["目印は、", "水色の扉と看板。"]} />
               </h2>
               <div className="measure mt-8 space-y-6 md:mt-10">
                 <p>
@@ -67,10 +93,10 @@ export default function AboutPage() {
 
             <div className="grid grid-cols-12 items-start gap-x-4 md:col-span-6 md:col-start-7 md:gap-x-8">
               <div className="col-span-7">
-                <Photo photo={photos.entranceSign} ratio="3/4" position="50% 30%" sizes="(max-width: 767px) 54vw, 28vw" />
+                <Photo photo={photos.entranceSign} ratio="3/4" position="50% 30%" parallax={24} sizes="(max-width: 767px) 54vw, 28vw" />
               </div>
-              <div className="col-span-5 mt-16 md:mt-28">
-                <Photo photo={photos.oliveTree} ratio="3/4" sizes="(max-width: 767px) 38vw, 20vw" delay={0.12} />
+              <div className="col-span-5 mt-20 md:mt-36">
+                <Photo photo={photos.oliveTree} ratio="3/4" reveal="right" delay={0.12} parallax={44} sizes="(max-width: 767px) 38vw, 20vw" />
               </div>
             </div>
           </div>
@@ -80,13 +106,13 @@ export default function AboutPage() {
       {/* ---- 店名 ---- */}
       <section className="section">
         <div className="wrap grid gap-y-10 md:grid-cols-12 md:items-center md:gap-x-8">
-          <div className="md:col-span-5 md:col-start-2">
-            <Photo photo={photos.signboard} ratio="4/5" position="60% 45%" sizes="(max-width: 767px) 88vw, 36vw" />
+          <div className="md:col-span-6">
+            <Photo photo={photos.signboard} ratio="4/5" position="60% 45%" className="pull-l" reveal="left" parallax={40} sizes="(max-width: 767px) 94vw, 48vw" />
           </div>
           <div className="md:col-span-5 md:col-start-8">
-            <h2 className="t-h2">
-              <span className="ib">店名は、</span>
-              <span className="ib">「ルフェール」と読みます。</span>
+            <Index n="02">Name</Index>
+            <h2 className="t-h2 mt-5" data-reveal="lines">
+              <Lines lines={["店名は、", "「ルフェール」と読みます。"]} />
             </h2>
             <div className="measure mt-8 space-y-6 md:mt-10">
               <p>
@@ -105,9 +131,9 @@ export default function AboutPage() {
         <div className="wrap">
           <div className="grid gap-y-10 md:grid-cols-12 md:gap-x-8">
             <div className="md:col-span-5">
-              <h2 className="t-h2">
-                <span className="ib">木の柱が4本立つ、</span>
-                <span className="ib">明るい店内。</span>
+              <Index n="03">Inside</Index>
+              <h2 className="t-h2 mt-5" data-reveal="lines">
+                <Lines lines={["木の柱が4本立つ、", "明るい店内。"]} />
               </h2>
               <div className="measure mt-8 space-y-6 md:mt-10">
                 <p>客席のあいだに、木の柱が4本。足もとには観葉植物。壁はグレー、床は石の色で、窓から光が入ります。</p>
@@ -116,16 +142,16 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="md:col-span-6 md:col-start-7">
-              <Photo photo={photos.interior02} ratio="4/5" position="50% 60%" className="max-md:pull-r" sizes="(max-width: 767px) 94vw, 46vw" />
+              <Photo photo={photos.interior02} ratio="4/5" position="50% 60%" className="pull-r" reveal="right" parallax={44} sizes="(max-width: 767px) 94vw, 48vw" />
             </div>
           </div>
 
           <div className="mt-6 grid grid-cols-12 items-start gap-x-4 md:mt-10 md:gap-x-8">
             <div className="col-span-5 md:col-span-3 md:col-start-2">
-              <Photo photo={photos.wallArt} ratio="3/4" position="40% 30%" sizes="(max-width: 767px) 38vw, 22vw" />
+              <Photo photo={photos.wallArt} ratio="3/4" position="40% 30%" parallax={18} sizes="(max-width: 767px) 38vw, 22vw" />
             </div>
-            <div className="col-span-7 mt-12 md:col-span-6 md:col-start-6 md:mt-24">
-              <Photo photo={photos.interior01} ratio="3/2" sizes="(max-width: 767px) 54vw, 46vw" delay={0.12} />
+            <div className="col-span-7 mt-16 md:col-span-7 md:col-start-6 md:mt-32">
+              <Photo photo={photos.interior01} ratio="3/2" reveal="left" delay={0.12} parallax={36} sizes="(max-width: 767px) 54vw, 52vw" />
             </div>
           </div>
         </div>
@@ -135,7 +161,8 @@ export default function AboutPage() {
       <section className="section">
         <div className="wrap grid gap-y-10 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-5">
-            <h2 className="t-h2">店での過ごし方</h2>
+            <Index n="04">How to</Index>
+            <h2 className="t-h2 mt-5">店での過ごし方</h2>
             <p className="measure mt-8 md:mt-10">
               昼は、曜日ごとに内容の替わるプレート。ショーケースには、ケーキが{cakes.length}種類（各{cakePrice}
               円）。店のInstagramには「{site.words.welcome.text}」とあります。食事をしない日も、気がねなくどうぞ。
@@ -147,15 +174,15 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <dl className="rows md:col-span-6 md:col-start-7">
+          <dl className="rows term-rows md:col-span-6 md:col-start-7" data-reveal="rows">
             {[
               { term: "注文", body: `${site.ordering}します。` },
               { term: "予約", body: `${site.reservation.by}で受け付けています。` },
               { term: "支払い", body: `${paymentLine}が使えます。` },
               { term: "持ち帰り", body: `弁当のテイクアウトができます。${site.takeout.preorderBy.join("か")}で、先に注文できます。` },
             ].map((row) => (
-              <div key={row.term} className="grid grid-cols-[5.5em_minmax(0,1fr)] gap-x-5 py-6 md:grid-cols-[7.5em_minmax(0,1fr)]">
-                <dt className="font-[family-name:var(--font-mincho)] text-[1.0625rem] tracking-[0.1em] text-ink">{row.term}</dt>
+              <div key={row.term}>
+                <dt>{row.term}</dt>
                 <dd>{row.body}</dd>
               </div>
             ))}
@@ -164,16 +191,17 @@ export default function AboutPage() {
       </section>
 
       {/* ---- 店の概要（事実だけを、短く） ---- */}
-      <section className="section no-cv" id="profile">
+      <section className="section" id="profile">
         <div className="wrap grid gap-y-10 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-4">
-            <h2 className="t-h2">店の概要</h2>
+            <Index n="05">Profile</Index>
+            <h2 className="t-h2 mt-5">店の概要</h2>
             <p className="measure mt-8">
               {site.name}は、{site.address.locality}
               {site.address.area}のカフェです。{site.access.routes[0].from}から{site.access.routes[0].car}、{parkingLine}の駐車場があります。
             </p>
           </div>
-          <dl className="facts md:col-span-7 md:col-start-6">
+          <dl className="facts md:col-span-7 md:col-start-6" data-reveal="rows">
             <div>
               <dt>店名</dt>
               <dd>

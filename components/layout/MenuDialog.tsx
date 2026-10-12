@@ -1,36 +1,48 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
+
+/** 閉じる動きの長さ（CSS の menu-out と同じ） */
+const CLOSE_MS = 550;
 
 /**
  * スマートフォン用の全画面メニュー。
  * <dialog> の showModal() を使うので、フォーカスの閉じ込め・Esc で閉じる・背面の操作不可はブラウザが受け持つ。
  * 中身（リンクの一覧）はサーバー側で描いたものを children で受け取る。
+ *
+ * 開くときは上から幕が下り、閉じるときは上へ引き上げる。
+ * 別のページへのリンクを押したときは、開いたままページを移り、移ったあとに引き上げる
+ * （メニューそのものが、ページの移り変わりの幕になる。data-no-veil は、共通の幕を重ねて出さないための印）。
  */
 export function MenuDialog({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   const pathname = usePathname();
 
+  const close = useCallback(() => {
+    const el = ref.current;
+    if (!el || !el.open || el.dataset.closing !== undefined) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.close();
+      return;
+    }
+    el.dataset.closing = "";
+    window.setTimeout(() => {
+      delete el.dataset.closing;
+      el.close();
+    }, CLOSE_MS);
+  }, []);
+
   // ページを移ったら閉じる
   useEffect(() => {
-    if (ref.current?.open) ref.current.close();
-  }, [pathname]);
+    close();
+  }, [pathname, close]);
 
   return (
     <>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        aria-controls="site-menu"
-        onClick={() => ref.current?.showModal()}
-        className="-mr-3 flex size-12 items-center justify-center lg:hidden"
-      >
-        <span className="sr-only">メニューを開く</span>
-        <span aria-hidden="true" className="flex w-7 flex-col gap-[7px]">
-          <span className="block h-px w-full bg-current" />
-          <span className="block h-px w-full bg-current" />
-        </span>
+      <button type="button" aria-haspopup="dialog" aria-controls="site-menu" onClick={() => ref.current?.showModal()} className="menu-btn lg:hidden">
+        <span>Menu</span>
+        <span className="sr-only">（メニューを開く）</span>
       </button>
 
       <dialog
@@ -38,18 +50,22 @@ export function MenuDialog({ children }: { children: ReactNode }) {
         id="site-menu"
         aria-label="メニュー"
         className="menu-dialog m-0"
+        data-no-veil=""
+        onCancel={(e) => {
+          // Esc でも、閉じる動きを見せてから閉じる
+          e.preventDefault();
+          close();
+        }}
         onClick={(e) => {
-          // 同じページへのリンクを押したときも閉じる
-          if ((e.target as HTMLElement).closest("a")) ref.current?.close();
+          // 同じページへのリンクは移動が起きないので、ここで閉じる
+          const a = (e.target as HTMLElement).closest("a");
+          if (a && new URL(a.href, window.location.href).pathname === window.location.pathname) close();
         }}
       >
-        <div className="wrap flex h-16 items-center justify-end">
-          <button
-            type="button"
-            onClick={() => ref.current?.close()}
-            className="-mr-3 flex h-12 items-center px-3 text-[0.8125rem] tracking-[0.16em] text-ink"
-          >
-            閉じる
+        <div className="flex h-[var(--header-h)] items-center justify-end px-[var(--gutter)]">
+          <button type="button" onClick={close} className="menu-btn">
+            <span>Close</span>
+            <span className="sr-only">（メニューを閉じる）</span>
           </button>
         </div>
         {children}

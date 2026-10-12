@@ -6,31 +6,39 @@
   色は、店の実物から取っている（届いた写真の色を測った）。
     生成りの地 … 外壁の白い塗り壁と、店内の明るい壁
     墨         … 黒い外壁、ケーキをのせる石の皿
-    扉の水色   … 入口の扉（#7fafc3）。差し色はこの1色だけ。細い線と小さな印にだけ使う
+    扉の水色   … 入口の扉（#7fafc3）。差し色はこの1色だけ。細い線・小さな番号・ホバーにだけ使う
   黒い地＋金、紫や青のグラデーション、影、角丸のカードは使わない。
-  区画は、地の色を交互に替えずに、余白と写真で分ける。
+  区画は、地の色を交互に替えずに、余白と写真と文字の大きさで分ける。
+
+  書体は2系統。
+    セリフ   … 欧文は Instrument Serif（Web フォントはこれだけ）、和文の見出しは端末の明朝
+    サンセリフ … 和文の本文は端末のゴシック、欧文の小さなラベルは端末のグロテスク
 
   カスタムクラスは必ず @layer components の中に書く
   （レイヤーの外に書くと、Tailwind のユーティリティを打ち消してしまう）。
 */
 @theme {
   --color-paper: #f6f4ef; /* 地 */
-  --color-paper-2: #ebe7df; /* 地（フッターと写真の下地） */
+  --color-paper-2: #ebe7df; /* 地（写真の下地・区切り） */
+  --color-paper-3: #e9e4da; /* 地の上に、ごく薄く置く大きな文字 */
   --color-line: #d6d0c5; /* 罫 */
-  --color-ink: #2e2c29; /* 文字（見出し） */
+  --color-ink: #262422; /* 文字（見出し） */
   --color-ink-2: #55514b; /* 文字（本文） */
   --color-mute: #6d6760; /* 注記（生成りの地の上で 4.5:1 以上） */
   --color-door: #7fafc3; /* 扉の水色。飾りの線・印・フォーカスの輪 */
   --color-door-deep: #386a7f; /* 水色を文字に使うときの濃い側（地の上で 4.5:1 以上） */
+  --color-night: #211f1d; /* フッター（黒い外壁の色） */
 
   /* 和文の見出しは端末の明朝、本文は端末のゴシック（日本語の Web フォントは読み込まない。表示が大きく遅れるため） */
   --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif CJK JP", "Noto Serif JP", serif;
   --font-gothic: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", "YuGothic", "Noto Sans JP", "Noto Sans CJK JP", Meiryo, sans-serif;
-  /* 欧文（店名・数字・小さなラベル）だけ Web フォント（EB Garamond） */
-  --font-latin: var(--font-garamond), "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
-  --font-latin-italic: var(--font-garamond-italic), var(--font-garamond), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  /* 欧文の大きな文字・数字（Instrument Serif） */
+  --font-display: var(--font-instrument), "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  /* 欧文の小さなラベル（端末のグロテスク） */
+  --font-grotesk: "Helvetica Neue", Helvetica, Arial, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", sans-serif;
 
-  --ease-quiet: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-quiet: cubic-bezier(0.22, 1, 0.36, 1); /* 現れる動き。すっと出て、ゆっくり止まる */
+  --ease-door: cubic-bezier(0.7, 0, 0.2, 1); /* 幕・扉。ゆっくり動きだして、ゆっくり止まる */
 }
 
 @layer base {
@@ -38,19 +46,24 @@
     color-scheme: light;
     /* 左右の余白 */
     --gutter: 1.5rem;
-    /* 本文の器の最大幅 */
+    /* 文章の器の最大幅 */
     --wrap-max: 76rem;
-    /* 写真を端まで伸ばすときの、いちばん外側の幅（とても広い画面で、写真が大きくなりすぎないように） */
-    --outer-max: 100rem;
-    /* 区画と区画のあいだの余白（スマートフォン 104px ／ PC 180〜208px） */
-    --gap: clamp(6.5rem, 15vw, 13rem);
-    /*
-      器（.wrap）の端から、区画の端までの距離。写真を片側だけ区画の端まで伸ばすときに使う。
-      100cqw は「いちばん近い区画（.section）の幅」。画面の幅（100vw）で測ると、スクロールバーの分だけずれるため。
-    */
-    --edge: max(var(--gutter), calc((100cqw - var(--wrap-max)) / 2));
+    /* 区画そのものの最大幅（とても広い画面で、写真が大きくなりすぎないように） */
+    --outer-max: 120rem;
+    /* 区画と区画のあいだの余白（スマートフォン 96px ／ PC 190〜240px） */
+    --gap: clamp(6rem, 13vw, 15rem);
     /* 固定ヘッダーの高さ */
-    --header-h: 4rem;
+    --header-h: 3.75rem;
+    /* トップの最初の画面で、幕が開きはじめるまでの時間。2回目からは待たせない（data-intro="skip"） */
+    --t0: 0.95s;
+  }
+  :root[data-intro="skip"] {
+    --t0: 0s;
+  }
+  @media (max-width: 359px) {
+    :root {
+      --gutter: 1.25rem;
+    }
   }
   @media (min-width: 768px) {
     :root {
@@ -60,12 +73,12 @@
   @media (min-width: 1024px) {
     :root {
       --gutter: 4rem;
-      --header-h: 5rem;
+      --header-h: 4.5rem;
     }
   }
   @media (min-width: 1440px) {
     :root {
-      --gutter: 6rem;
+      --gutter: 5.5rem;
     }
   }
 
@@ -75,18 +88,34 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     scroll-padding-top: calc(var(--header-h) + 1.5rem);
+    /* 画面の端まで伸ばした写真や大きな文字が、横スクロールを作らないように（hidden だと、貼りつく配置が効かなくなる） */
+    overflow-x: clip;
   }
 
-  /* 本文：16px、行間 2.0。ゴシック */
+  /* 本文：15〜16px、行間 2.0。ゴシック。地には、紙のざらつきをごく薄く敷く */
   body {
     font-family: var(--font-gothic);
-    font-size: 1rem;
+    font-size: clamp(0.9375rem, 0.9rem + 0.16vw, 1rem);
     line-height: 2;
     letter-spacing: 0.04em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-break: strict;
     overflow-wrap: anywhere;
+    /*
+      html と body の両方で、横のはみ出しを切る。
+      html だけだと、スマートフォンでは、はみ出した分だけ画面全体が縮んで表示される（端まで伸ばした写真・大きな文字のため）。
+    */
+    overflow-x: clip;
+  }
+  /*
+    紙のざらつきは、ページの読み込みが終わってから敷く（html に .is-loaded が付いてから）。
+    最初から読むと、最初の画面の写真と回線を取り合って、表示が遅れるため。JS が動かないときは、最初から敷く。
+  */
+  html.is-loaded body,
+  html:not(.js) body {
+    background-image: url("/textures/grain.png");
+    background-size: 96px 96px;
   }
 
   h1,
@@ -129,10 +158,24 @@
 }
 
 @layer components {
-  /* ---- 器 ---------------------------------------------------------------- */
+  /* ======================================================================
+     器
+     ====================================================================== */
+  /* 文章の器（下層ページ・記事） */
   .wrap {
     width: min(100% - var(--gutter) * 2, var(--wrap-max));
     margin-inline: auto;
+    /*
+      器の端から、区画の端までの距離。写真を片側だけ区画の端まで伸ばすときに使う（pull-l / pull-r）。
+      100cqw は「いちばん近い区画（.section）の幅」。画面の幅（100vw）で測ると、スクロールバーの分だけずれるため。
+    */
+    --edge: max(var(--gutter), calc((100cqw - var(--wrap-max)) / 2));
+  }
+  /* 広い器（トップの誌面。左右の余白だけを残して、区画いっぱいに使う） */
+  .wide {
+    width: calc(100% - var(--gutter) * 2);
+    margin-inline: auto;
+    --edge: var(--gutter);
   }
 
   /* 読みものの幅（1行 34字ほど） */
@@ -142,11 +185,23 @@
 
   /* 区画。上下に余白の半分ずつを持つので、区画どうしのあいだは --gap になる */
   .section {
+    position: relative;
     max-width: var(--outer-max);
     margin-inline: auto;
     padding-block: calc(var(--gap) / 2);
     /* 中の要素が、この区画の幅（100cqw）を基準にできるようにする */
     container-type: inline-size;
+  }
+  /*
+    最初の表示のあいだだけ、画面の外にある区画の描画を後回しにする（開いた直後の処理を軽くする）。
+    html の data-cv は、lib/boot-script.ts が、初めて開いたときにだけ付ける。読み込みが終わると、
+    1区画ずつ data-cv-done を付けてふつうの描画に戻し、全部済んだら data-cv を外す。
+    付けたままにはしない（再読み込みや「戻る」のあとに、見ていた位置がずれるため）。
+    中身は HTML にそのまま入っているので、検索エンジンにもページ内検索にも見える。
+  */
+  html[data-cv] .section:not([data-cv-done]) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 100rem;
   }
   /* 余白を持たない区画（記事の見出し写真など。中で pull-l / pull-r を使うための入れ物） */
   .cq {
@@ -154,35 +209,82 @@
     margin-inline: auto;
     container-type: inline-size;
   }
-  /*
-    画面の外にある区画は、近づくまで描画しない（長いページの最初の処理を軽くする）。
-    中身は HTML にそのまま入っているので、検索エンジンにもページ内検索にも見える。
-    ページ内リンク（#id）の飛び先になる区画には .no-cv を付けて外す（飛んだ位置がずれるため）。
-  */
-  .section:not(.no-cv) {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 52rem;
+
+  /* ======================================================================
+     文字
+     大きさの差をはっきり付ける。ラベル 11〜12px ／ 本文 15〜16px ／ 大見出し 34〜84px。
+     ====================================================================== */
+  /* 欧文の小さなラベル（区画の名前・項目の名前） */
+  .t-label {
+    font-family: var(--font-grotesk);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--color-mute);
+  }
+  /* 区画の番号（01 FOOD のような）。番号だけ、扉の水色 */
+  .t-label .n {
+    margin-right: 1.2em;
+    color: var(--color-door-deep);
+  }
+  /* 和文の小さな見出し（「あわせて読む」「目次」など） */
+  .t-kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+    font-family: var(--font-gothic);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.22em;
+    color: var(--color-mute);
+  }
+  .t-kicker::before {
+    content: "";
+    display: block;
+    width: 1.75rem;
+    height: 1px;
+    background: var(--color-door);
+  }
+  @media (min-width: 1024px) {
+    .t-label {
+      font-size: 0.75rem;
+    }
   }
 
-  /* ---- 文字 -------------------------------------------------------------- */
+  /* 誌面の大見出し（和文の明朝を、大きく） */
+  .t-display {
+    font-size: clamp(2.125rem, 1.25rem + 4.3vw, 5.25rem);
+    line-height: 1.36;
+    letter-spacing: 0.06em;
+  }
+  /* 下層ページの見出し（h1） */
   .t-h1 {
-    font-size: clamp(1.625rem, 1.32rem + 1.3vw, 2.5rem);
-    line-height: 1.7;
-    letter-spacing: 0.08em;
+    font-size: clamp(1.875rem, 1.3rem + 2.9vw, 4rem);
+    line-height: 1.42;
+    letter-spacing: 0.06em;
+  }
+  /* 記事の題名（読みやすさを優先して、ひかえめに） */
+  .t-h1-article {
+    font-size: clamp(1.625rem, 1.3rem + 1.5vw, 2.75rem);
+    line-height: 1.6;
+    letter-spacing: 0.06em;
   }
   .t-h2 {
-    font-size: clamp(1.4375rem, 1.2rem + 1vw, 2.125rem);
-    line-height: 1.75;
-    letter-spacing: 0.08em;
+    font-size: clamp(1.5rem, 1.18rem + 1.5vw, 2.625rem);
+    line-height: 1.55;
+    letter-spacing: 0.07em;
   }
   .t-h3 {
-    font-size: clamp(1.0625rem, 1.02rem + 0.25vw, 1.1875rem);
-    line-height: 1.8;
+    font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+    line-height: 1.75;
     letter-spacing: 0.06em;
   }
   .t-lead {
-    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
-    line-height: 2.15;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    line-height: 2.1;
     letter-spacing: 0.05em;
     color: var(--color-ink);
   }
@@ -194,38 +296,24 @@
     color: var(--color-mute);
   }
 
-  /* 区画の名前（小さなラベル）。扉の水色の短い線を添える */
-  .label {
-    display: flex;
-    align-items: center;
-    gap: 0.9em;
-    font-size: 0.75rem;
-    line-height: 1.6;
-    letter-spacing: 0.22em;
-    color: var(--color-mute);
-  }
-  .label::before {
-    content: "";
-    display: block;
-    width: 1.75rem;
-    height: 1px;
-    background: var(--color-door);
-  }
-
-  /* 欧文（店名など）。斜体の EB Garamond */
-  .latin-i {
-    font-family: var(--font-latin-italic);
-    font-style: italic;
+  /* 欧文の大きな文字（店名・区画の名前）。Instrument Serif。<i> は斜体 */
+  .latin {
+    font-family: var(--font-display);
     font-weight: 400;
-    letter-spacing: 0.01em;
+    font-style: normal;
+    line-height: 0.9;
+    letter-spacing: -0.012em;
     font-feature-settings: "liga", "kern";
   }
-  /* 数字（価格・時刻） */
+  .latin i {
+    font-style: italic;
+  }
+  /* 数字（価格・時刻・日付） */
   .num {
-    font-family: var(--font-latin);
+    font-family: var(--font-display);
     font-weight: 400;
-    font-size: 1.22em;
-    letter-spacing: 0.03em;
+    font-size: 1.3em;
+    letter-spacing: 0.02em;
     font-variant-numeric: lining-nums;
     line-height: 1;
   }
@@ -236,64 +324,139 @@
     max-width: 100%;
   }
 
-  /* ---- リンク ------------------------------------------------------------ */
+  /* 大見出しの1行（意味のまとまり）。行ごとに、下からせり上がって現れる */
+  .line {
+    display: block;
+  }
+  .line-in {
+    display: block;
+  }
+
+  /* 写真に添える短い説明。小さく、端に */
+  .caption {
+    margin-top: 0.9rem;
+    font-size: 0.8125rem;
+    line-height: 1.8;
+    letter-spacing: 0.06em;
+    color: var(--color-mute);
+  }
+
+  /* ======================================================================
+     リンク（ボタンは使わない。文字と、細い線だけ）
+     ====================================================================== */
+  /* 文章の中のリンク */
   .link {
     color: var(--color-ink);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.4em;
     text-decoration-color: var(--color-door);
-    transition: text-decoration-color 0.4s var(--ease-quiet), color 0.4s var(--ease-quiet);
+    transition: text-decoration-color 0.5s var(--ease-quiet), color 0.5s var(--ease-quiet);
   }
   .link:hover {
     color: var(--color-door-deep);
     text-decoration-color: var(--color-door-deep);
   }
 
-  /* 先へ進むリンク。文字のあとに細い線が伸びる（箱や丸いボタンにはしない） */
+  /* 先へ進むリンク。文字のあとに、細い矢印。載せると、矢印がゆっくり先へ進む */
   .more {
     display: inline-flex;
     align-items: center;
-    gap: 1em;
+    gap: 1.1em;
     min-height: 2.75rem;
     color: var(--color-ink);
-    font-size: 0.9375rem;
-    letter-spacing: 0.1em;
+    font-size: 0.875rem;
+    letter-spacing: 0.12em;
   }
   .more::after {
     content: "";
+    flex: none;
     display: block;
-    width: 2.5rem;
-    height: 1px;
+    width: 48px;
+    height: 9px;
     background: currentColor;
-    opacity: 0.5;
-    transform-origin: left center;
-    transition: transform 0.6s var(--ease-quiet), opacity 0.6s var(--ease-quiet), background-color 0.6s var(--ease-quiet);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='9' viewBox='0 0 48 9'%3E%3Cpath d='M0 4.5h47M43 .5l4 4-4 4' fill='none' stroke='%23000'/%3E%3C/svg%3E") no-repeat center / 48px 9px;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='9' viewBox='0 0 48 9'%3E%3Cpath d='M0 4.5h47M43 .5l4 4-4 4' fill='none' stroke='%23000'/%3E%3C/svg%3E") no-repeat center / 48px 9px;
+    opacity: 0.65;
+    transition: transform 0.8s var(--ease-quiet), opacity 0.8s var(--ease-quiet), background-color 0.8s var(--ease-quiet);
   }
   .more:hover::after {
-    transform: scaleX(1.5);
+    transform: translateX(10px);
     opacity: 1;
     background: var(--color-door-deep);
   }
 
-  /* ---- 行の並び（カードの代わり） ---------------------------------------- */
-  .rows > * {
-    border-top: 1px solid var(--color-line);
+  /* 1行のリンクの下線。左から引かれ、右へ抜ける */
+  .ul {
+    position: relative;
+    display: inline-block;
   }
-  .rows > *:last-child {
-    border-bottom: 1px solid var(--color-line);
+  .ul::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.4em;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.7s var(--ease-quiet);
+  }
+  a:hover > .ul::after,
+  a.ul:hover::after,
+  [aria-current="page"] > .ul::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+  [aria-current="page"] > .ul::after {
+    background: var(--color-door);
+  }
+
+  /* ======================================================================
+     行の並び（カードの代わり）。罫は、画面に入ると左から引かれる
+     ====================================================================== */
+  .rows > * {
+    position: relative;
+  }
+  .rows > *::before,
+  .rows > *:last-child::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--color-line);
+    transform-origin: left center;
+  }
+  .rows > *:last-child::after {
+    top: auto;
+    bottom: 0;
   }
 
   /* 定義リスト：左に項目、右に内容 */
   .facts > div {
+    position: relative;
     display: grid;
     grid-template-columns: 5.25em minmax(0, 1fr);
     gap: 1.25rem;
     padding-block: 1.05rem;
-    border-top: 1px solid var(--color-line);
   }
-  .facts > div:last-child {
-    border-bottom: 1px solid var(--color-line);
+  .facts > div::before,
+  .facts > div:last-child::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--color-line);
+    transform-origin: left center;
+  }
+  .facts > div:last-child::after {
+    top: auto;
+    bottom: 0;
   }
   .facts dt {
     color: var(--color-mute);
@@ -313,29 +476,94 @@
     }
   }
 
-  /* ---- ヘッダー ---------------------------------------------------------- */
+  /* 項目の名前（明朝）と、その説明の行 */
+  .term-rows > div {
+    display: grid;
+    grid-template-columns: 5.5em minmax(0, 1fr);
+    column-gap: 1.25rem;
+    padding-block: 1.5rem;
+  }
+  .term-rows dt {
+    font-family: var(--font-mincho);
+    font-size: 1.0625rem;
+    letter-spacing: 0.1em;
+    color: var(--color-ink);
+  }
+  @media (min-width: 768px) {
+    .term-rows > div {
+      grid-template-columns: 7.5em minmax(0, 1fr);
+      padding-block: 1.75rem;
+    }
+  }
+
+  /* ======================================================================
+     ヘッダー
+     最初は透けている。下へ送ると上へ隠れ、上へ戻すと、ぼかした生成りの地を敷いて出てくる。
+     ====================================================================== */
   .site-header {
     position: fixed;
     inset: 0 0 auto 0;
     z-index: 50;
     height: var(--header-h);
-    background: var(--color-paper);
-    border-bottom: 1px solid var(--color-line);
     color: var(--color-ink);
-    transition: background-color 0.5s var(--ease-quiet), border-color 0.5s var(--ease-quiet), color 0.5s var(--ease-quiet);
+    transition: transform 0.8s var(--ease-quiet), color 0.5s var(--ease-quiet);
   }
-  /* トップの最初の画面では、写真の上に透けて重なる。店名は出さない（ヒーローに大きく出ているため） */
-  .site-header[data-over-hero]:not([data-scrolled]) {
-    background: transparent;
-    border-bottom-color: transparent;
+  /*
+    地（ぼかし）は、ヘッダーそのものではなく疑似要素に付ける。
+    ヘッダー自身に backdrop-filter を付けると、中の全画面メニューの置き場所の基準が狂うため。
+  */
+  .site-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgb(246 244 239 / 0.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    backdrop-filter: blur(16px) saturate(1.15);
+    border-bottom: 1px solid rgb(214 208 197 / 0.75);
+    transition: opacity 0.6s var(--ease-quiet);
+  }
+  html:not([data-past]) .site-header::before {
+    opacity: 0;
+  }
+  /* トップの最初の画面では、写真の上に白い文字で重なる。店名は出さない（ヒーローに大きく出ているため） */
+  html:not([data-past]) .site-header[data-over-hero] {
     color: #fff;
   }
-  .site-header .hide-on-hero {
-    transition: opacity 0.5s var(--ease-quiet), visibility 0.5s;
+  /* 写真の上では、フォーカスの輪も白にする */
+  html:not([data-past]) .site-header[data-over-hero] :focus-visible {
+    outline-color: #fff;
   }
-  .site-header[data-over-hero]:not([data-scrolled]) .hide-on-hero {
+  .site-header .hide-on-hero {
+    transition: opacity 0.6s var(--ease-quiet), visibility 0.6s;
+  }
+  html:not([data-past]) .site-header[data-over-hero] .hide-on-hero {
     opacity: 0;
     visibility: hidden;
+  }
+  /* 下へ送っているあいだは隠す。キーボードで中のリンクに移ったときは、隠さない */
+  html[data-hide] .site-header:not(:focus-within) {
+    transform: translateY(-101%);
+  }
+  /* JS が動かないときは、貼りつけずにページの先頭に置く（透けたまま本文に重ならないように） */
+  html:not(.js) .site-header {
+    position: absolute;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    line-height: 1;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+  }
+  .logo i {
+    font-style: italic;
+  }
+  @media (min-width: 1024px) {
+    .logo {
+      font-size: 1.5rem;
+    }
   }
 
   .nav-link {
@@ -343,38 +571,103 @@
     align-items: center;
     min-height: 2.75rem;
     font-size: 0.8125rem;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.18em;
     color: inherit;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.75em;
-    text-decoration-color: transparent;
-    transition: text-decoration-color 0.4s var(--ease-quiet);
-  }
-  .nav-link:hover,
-  .nav-link[aria-current="page"] {
-    text-decoration-color: var(--color-door);
   }
 
-  /* ---- 全画面メニュー ---------------------------------------------------- */
+  /* スマートフォンのメニューを開く・閉じる文字 */
+  .menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 3rem;
+    height: 3rem;
+    font-family: var(--font-grotesk);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: inherit;
+  }
+  .menu-btn > span {
+    /* 字間の分だけ右にずれるのを戻して、右端をそろえる */
+    margin-right: -0.26em;
+  }
+
+  /* ---- 全画面メニュー ---- */
   .menu-dialog {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    background: var(--color-paper);
+    background: var(--color-paper) url("/textures/grain.png") 0 0 / 96px 96px;
     color: var(--color-ink);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
   .menu-dialog::backdrop {
-    background: var(--color-paper);
+    background: transparent;
   }
+  /* 上から幕が下りるように開き、上へ引き上げるように閉じる */
   .menu-dialog[open] {
-    animation: fade-in 0.4s var(--ease-quiet);
+    animation: menu-in 0.75s var(--ease-quiet) both;
+  }
+  .menu-dialog[open][data-closing] {
+    animation: menu-out 0.55s var(--ease-door) both;
+  }
+  @keyframes menu-in {
+    from {
+      clip-path: inset(0 0 100% 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  @keyframes menu-out {
+    from {
+      clip-path: inset(0 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+  .menu-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 4.5rem;
+    padding-block: 1.1rem;
+    font-family: var(--font-mincho);
+    font-size: 1.5rem;
+    line-height: 1.5;
+    letter-spacing: 0.12em;
+    color: var(--color-ink);
+  }
+  /* 項目の右に、小さな欧文を添える（飾り。文字は data-en から CSS で出す） */
+  .menu-item::after {
+    content: attr(data-en);
+    flex: none;
+    font-family: var(--font-grotesk);
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--color-mute);
+  }
+  .menu-dialog[open]:not([data-closing]) .menu-rise {
+    animation: rise 0.9s var(--ease-quiet) calc(0.18s + var(--i, 0) * 0.07s) backwards;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.1rem);
+    }
   }
 
-  /* ---- ヒーロー ---------------------------------------------------------- */
+  /* ======================================================================
+     最初の画面（ヒーロー）
+     ====================================================================== */
   .hero {
     position: relative;
     /*
@@ -383,68 +676,87 @@
       いちばん大きな要素であるこの写真を、正しく計測の対象にするため。見た目の差は分からない。
     */
     height: calc(100svh - 4px);
-    min-height: 34rem;
+    min-height: 31rem;
     overflow: hidden;
-    background: #8f8b85;
+    overflow: clip;
+    background: #2b2825;
     color: #fff;
   }
+  /* 写真の置き場所。読み込みが終わるまでは、写真をごく小さくしたもの（数百バイト）を引き伸ばして敷いておく */
   .hero-media {
     position: absolute;
     inset: 0;
+    background: var(--blur-sp) center / cover no-repeat;
   }
   .hero-media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* ごくわずかに引いていく（一度きり）。写真は最初から見えているので、表示の速さには影響しない */
-    animation: hero-settle 8s var(--ease-quiet) both;
+    object-position: var(--pos-sp, 50% 50%);
+    /* ごくわずかに引いていく（一度きり）。写真は最初から描かれているので、表示の速さには影響しない */
+    animation: hero-settle 9s cubic-bezier(0.2, 0.6, 0.2, 1) both;
   }
   @keyframes hero-settle {
     from {
-      transform: scale(1.045);
+      scale: 1.07;
     }
     to {
-      transform: none;
+      scale: 1;
+    }
+  }
+  @media (min-width: 768px) {
+    .hero-media {
+      background-image: var(--blur-pc);
+    }
+    .hero-media img {
+      object-position: var(--pos-pc, 50% 50%);
     }
   }
   /* 文字を読めるようにするための陰。上はヘッダーの文字のため、下は店名のため */
   .hero-shade {
     position: absolute;
     inset: 0;
+    z-index: 1;
     background:
-      linear-gradient(to bottom, rgb(38 35 31 / 0.38) 0%, rgb(38 35 31 / 0) 22%),
-      linear-gradient(to top, rgb(38 35 31 / 0.66) 0%, rgb(38 35 31 / 0.3) 30%, rgb(38 35 31 / 0) 58%);
+      linear-gradient(to bottom, rgb(24 21 18 / 0.46) 0%, rgb(24 21 18 / 0) 24%),
+      linear-gradient(to top, rgb(24 21 18 / 0.74) 0%, rgb(24 21 18 / 0.4) 28%, rgb(24 21 18 / 0) 60%);
     pointer-events: none;
   }
-  .hero-message {
-    font-family: var(--font-mincho);
-    font-size: clamp(1rem, 0.9rem + 0.5vw, 1.3125rem);
-    line-height: 2;
-    letter-spacing: 0.2em;
+  .hero-body {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    padding: 0 var(--gutter) calc(1.75rem + env(safe-area-inset-bottom, 0px));
   }
-  /* 幅の狭いスマートフォンでは、1行に収まるように字間を少し詰める */
-  @media (max-width: 359px) {
-    .hero-message {
-      letter-spacing: 0.12em;
-    }
-  }
-  .hero-wordmark {
+  /* 店名。画面の端まで使って、大きく2行に組む（1行目は立体、2行目は斜体を1字ぶん下げる） */
+  .hero-lockup {
     display: block;
-    font-family: var(--font-latin-italic);
-    font-style: italic;
-    font-weight: 400;
-    font-size: clamp(3.25rem, 1.9rem + 6.4vw, 7.5rem);
-    line-height: 1;
-    letter-spacing: 0.005em;
     color: #fff;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: min(25.5vw, 15.5svh);
+    line-height: 0.86;
+    letter-spacing: -0.02em;
+    /* 斜体の字の端が、左右の余白にはみ出しても切れないように */
+    margin-left: -0.03em;
+  }
+  .hero-lockup i {
+    font-style: italic;
+  }
+  .hero-l2 {
+    padding-left: 0.34em;
   }
   /* 店名の下に添える、どこの何の店か。表札の添え書きのように小さく */
   .hero-place {
     display: flex;
     align-items: center;
     gap: 1em;
+    margin-top: 1.6rem;
     font-family: var(--font-gothic);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 500;
     line-height: 1.6;
     letter-spacing: 0.3em;
@@ -457,23 +769,217 @@
     height: 1px;
     background: var(--color-door);
   }
-  @media (min-width: 768px) {
+  .hero-message {
+    margin-top: 0.7rem;
+    font-family: var(--font-mincho);
+    font-size: 0.9375rem;
+    line-height: 2;
+    letter-spacing: 0.2em;
+  }
+  /* 幅の狭いスマートフォンでは、1行に収まるように字間を少し詰める */
+  @media (max-width: 359px) {
+    .hero-message {
+      letter-spacing: 0.12em;
+    }
     .hero-place {
-      font-size: 0.8125rem;
+      letter-spacing: 0.22em;
+    }
+  }
+  /* 下へ続くことを知らせる、細い線。上から下へ、ゆっくり伸びる */
+  .hero-scroll {
+    position: absolute;
+    right: var(--gutter);
+    bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    font-family: var(--font-grotesk);
+    font-size: 0.5625rem;
+    font-weight: 500;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+  }
+  /* 文字は縦に（欧文を横倒しにして、上から下へ読む） */
+  .hero-scroll > span {
+    writing-mode: vertical-rl;
+  }
+  .hero-scroll > i {
+    display: block;
+    width: 1px;
+    height: 3.25rem;
+    background: rgb(255 255 255 / 0.9);
+    transform-origin: center top;
+    /* 5回半で止める（最後は、線が伸びきったところで止まる）。ずっと回し続けない */
+    animation: scroll-line 2.8s cubic-bezier(0.6, 0, 0.3, 1) 2.4s 5.5 both;
+  }
+  @keyframes scroll-line {
+    0% {
+      transform: scaleY(0);
+      transform-origin: center top;
+    }
+    50% {
+      transform: scaleY(1);
+      transform-origin: center top;
+    }
+    50.01% {
+      transform: scaleY(1);
+      transform-origin: center bottom;
+    }
+    100% {
+      transform: scaleY(0);
+      transform-origin: center bottom;
+    }
+  }
+  @media (min-width: 768px) {
+    .hero-body {
+      padding-bottom: 2.5rem;
+    }
+    .hero-lockup {
+      font-size: min(14.4vw, 27svh);
+      line-height: 0.84;
+    }
+    .hero-place {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+    }
+    /* PC では、ことばを右下に置く（店名の右、線の手前） */
+    .hero-message {
+      position: absolute;
+      right: calc(var(--gutter) + 4.5rem);
+      bottom: 2.5rem;
+      margin-top: 0;
+      font-size: clamp(0.9375rem, 0.82rem + 0.36vw, 1.1875rem);
+      line-height: 1.6;
+    }
+    .hero-scroll {
+      bottom: 2.5rem;
+      font-size: 0.625rem;
+    }
+    .hero-scroll > i {
+      height: 4.5rem;
+    }
+  }
+  /* 背の低い画面（横向きのスマートフォンなど）では、最小の高さを外して1画面に収める */
+  @media (max-height: 540px) and (orientation: landscape) {
+    .hero {
+      min-height: 0;
+    }
+    .hero-scroll > i {
+      height: 2.25rem;
     }
   }
 
-  /* 下層ページの冒頭（固定のヘッダーの分を含む） */
-  .page-head {
-    padding-top: calc(var(--header-h) + clamp(2.5rem, 7vw, 5.5rem));
+  /* 最初の画面の文字は、幕が開いたあと（--t0）に順に現れる。JS を待たない */
+  .hero-lockup .line {
+    animation: line-mask 1.2s linear calc(var(--t0) + 0.3s + var(--i, 0) * 0.12s) backwards;
+  }
+  .hero-lockup .line-in {
+    animation: line-up 1.2s var(--ease-quiet) calc(var(--t0) + 0.3s + var(--i, 0) * 0.12s) backwards;
+  }
+  .hero-place {
+    animation: fade-rise 1.1s var(--ease-quiet) calc(var(--t0) + 0.8s) backwards;
+  }
+  .hero-message {
+    animation: fade-rise 1.1s var(--ease-quiet) calc(var(--t0) + 0.95s) backwards;
+  }
+  .hero-scroll {
+    animation: fade-in 1.1s var(--ease-quiet) calc(var(--t0) + 1.3s) backwards;
   }
 
-  /* ---- 写真 -------------------------------------------------------------- */
   /*
-    .photo    … 置き場所（大きさを決める箱）。画面に入ったかどうかは、この箱で見る
-    .photo-in … 中身（写真を切り抜く箱）。現れる動きは、こちらに付ける
-    2つに分けてあるのは、隠している箱そのものは「画面に入った」と判定されないため。
+    最初の演出（その訪問で一度だけ）。
+    生成りの幕が画面を覆う → 店名が静かに現れる → 幕が、扉のように左右に開く → 写真が現れる。
+    写真は幕の下で最初から描かれているので、表示の速さ（LCP）は遅れない。
+    幕は操作をさえぎらない（pointer-events: none）。店名の文字は、飾りなので CSS で出す。
   */
+  .opening {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    animation: opening-end 0.01s linear 2.15s forwards;
+  }
+  html[data-intro="skip"] .opening {
+    display: none;
+  }
+  /*
+    幕が開ききったら、描画から外す。
+    from と to の両方に書くこと（to だけだと、最後の進み具合が計算の誤差で 0.9999… になり、visible のままになる）。
+  */
+  @keyframes opening-end {
+    from,
+    to {
+      visibility: hidden;
+    }
+  }
+  .opening-door {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: calc(50% + 1px);
+    background: var(--color-paper);
+  }
+  .opening-door-l {
+    left: 0;
+    animation: door-l 1.05s var(--ease-door) 0.95s forwards;
+  }
+  .opening-door-r {
+    right: 0;
+    animation: door-r 1.05s var(--ease-door) 0.95s forwards;
+  }
+  @keyframes door-l {
+    to {
+      transform: translateX(-101%);
+    }
+  }
+  @keyframes door-r {
+    to {
+      transform: translateX(101%);
+    }
+  }
+  .opening-mark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.28em;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 1.3rem + 2vw, 2.75rem);
+    line-height: 1;
+    color: var(--color-ink);
+    animation:
+      opening-mark-in 0.75s var(--ease-quiet) 0.1s backwards,
+      opening-mark-out 0.35s ease-in 0.8s forwards;
+  }
+  .opening-mark::before {
+    content: "Cafe";
+  }
+  .opening-mark::after {
+    content: "Re faire";
+    font-style: italic;
+  }
+  @keyframes opening-mark-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+  }
+  @keyframes opening-mark-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* ======================================================================
+     写真
+       .photo    … 置き場所（大きさを決める箱）。画面に入ったかどうかは、この箱で見る
+       .photo-in … 切り抜く箱。現れる動き（幕）は、こちらに付ける
+       .photo-px … スクロールに合わせて、枠の中でゆっくり動く箱（視差）。枠そのものは動かない
+     箱を分けてあるのは、隠している箱そのものは「画面に入った」と判定されないため。
+     ====================================================================== */
   .photo {
     position: relative;
     /* 比率は Photo が --ar（と、スマートフォン用の --ar-sp）で渡す */
@@ -488,18 +994,37 @@
     position: absolute;
     inset: 0;
     overflow: hidden;
+    overflow: clip;
     background: var(--color-paper-2);
   }
-  .photo-in > img {
+  .photo-in img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: var(--pos-sp, var(--pos, 50% 50%));
+  }
+  @media (min-width: 768px) {
+    .photo-in img {
+      object-position: var(--pos, 50% 50%);
+    }
+  }
+  /* 視差の箱は、動く分だけ上下に大きくしておく（動いても枠の端が見えない） */
+  .photo-px {
+    position: absolute;
+    inset: calc(var(--px, 0px) * -1) 0;
+  }
+  @media (max-width: 767px) {
+    .photo-px {
+      /* スマートフォンでは、動きを6割に抑える */
+      inset: calc(var(--px, 0px) * -0.6) 0;
+    }
   }
 
   /* 写真以外の枠（記事一覧の小さな写真・地図） */
   .frame {
     position: relative;
     overflow: hidden;
+    overflow: clip;
     background: var(--color-paper-2);
   }
   .frame > img {
@@ -508,28 +1033,489 @@
     object-fit: cover;
   }
 
-  /* 写真に添える短い説明 */
-  .caption {
-    margin-top: 0.85rem;
-    font-size: 0.8125rem;
-    line-height: 1.8;
-    letter-spacing: 0.05em;
-    color: var(--color-mute);
+  /*
+    写真にポインターを載せたとき（PC だけ）。ごくわずかに、ゆっくり拡大する。
+    名前を添えた写真（.zoom）は、名前のほうに載せても同じように動き、名前が少し右へ寄る。
+  */
+  @media (hover: hover) and (pointer: fine) {
+    .photo-in img,
+    .zoom .frame > img {
+      transition: scale 1s var(--ease-quiet);
+    }
+    .photo:hover .photo-in img,
+    .zoom:hover .photo-in img,
+    .zoom:hover .frame > img {
+      scale: 1.025;
+    }
+    .zoom figcaption,
+    .zoom .zoom-shift {
+      transition: transform 1s var(--ease-quiet);
+    }
+    .zoom:hover figcaption,
+    .zoom:hover .zoom-shift {
+      transform: translateX(0.5rem);
+    }
   }
 
-  /* ---- 読みもの（記事の本文） -------------------------------------------- */
+  /* ======================================================================
+     トップ：はじめに
+     ====================================================================== */
+  /* 大見出し。スマートフォンでは、2行目（9字）が必ず1行に入る大きさにする */
+  .lead-title {
+    font-size: clamp(1.75rem, calc((100vw - var(--gutter) * 2) / 9.7), 3.25rem);
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+  }
+  @media (min-width: 768px) {
+    .lead-title {
+      font-size: clamp(3rem, 1rem + 4.7vw, 5.5rem);
+      line-height: 1.34;
+    }
+  }
+
+  /* ======================================================================
+     トップ：店の使いかた（PC では、左のことばが貼りついたまま、右の場面が流れる）
+     ====================================================================== */
+  .msg-title {
+    font-size: clamp(1.875rem, calc((100vw - var(--gutter) * 2) / 8.6), 3.25rem);
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+  }
+  @media (min-width: 1024px) {
+    .msg-side {
+      position: sticky;
+      top: calc(var(--header-h) + 2.5rem);
+      align-self: start;
+    }
+    .msg-title {
+      font-size: clamp(2.5rem, 0.4rem + 3.5vw, 4.25rem);
+    }
+  }
+  .msg-quote blockquote {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--color-door);
+    font-family: var(--font-mincho);
+    font-size: 1.0625rem;
+    line-height: 2.1;
+    letter-spacing: 0.06em;
+    color: var(--color-ink);
+  }
+  /* 場面の名前（朝・昼・甘いもの・持ち帰り） */
+  .scene-term {
+    font-family: var(--font-mincho);
+    font-size: clamp(1.625rem, 1.3rem + 1.5vw, 2.75rem);
+    line-height: 1.4;
+    letter-spacing: 0.14em;
+    color: var(--color-ink);
+  }
+
+  /* ======================================================================
+     トップ：メニュー
+     ふだんは縦に組む。PC で、スクロール連動のアニメーションが使えるブラウザだけ、
+     画面に貼りついたまま写真が横に流れる（下の @supports の中）。
+     ====================================================================== */
+  .hstrip-pin {
+    width: calc(100% - var(--gutter) * 2);
+    margin-inline: auto;
+    --edge: var(--gutter);
+  }
+  .hstrip-track {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 1rem;
+    row-gap: 3.5rem;
+    margin-top: 2rem;
+  }
+  .hs-title {
+    grid-column: 1 / -1;
+  }
+  .hs-1 {
+    grid-column: 1 / -1;
+  }
+  .hs-1 .photo {
+    margin-left: calc(var(--edge) * -1);
+  }
+  .hs-2 {
+    grid-column: 5 / -1;
+  }
+  .hs-3 {
+    grid-column: 1 / 12;
+  }
+  .hs-4 {
+    grid-column: 3 / 10;
+  }
+  .hs-foot {
+    margin-top: 3rem;
+  }
+  .hs-progress {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .hstrip-track {
+      column-gap: 2rem;
+      row-gap: 6rem;
+      margin-top: 3rem;
+      align-items: start;
+    }
+    .hs-title {
+      grid-column: 1 / 8;
+    }
+    .hs-1 {
+      grid-column: 1 / 9;
+    }
+    .hs-2 {
+      grid-column: 10 / -1;
+      margin-top: 9rem;
+    }
+    .hs-3 {
+      grid-column: 6 / -1;
+    }
+    .hs-4 {
+      grid-column: 2 / 5;
+      margin-top: -14rem;
+    }
+    .hs-foot {
+      margin-top: 4.5rem;
+    }
+  }
+
+  /* ======================================================================
+     トップ：店内（写真集のように、大きな1枚 → 別の角度）
+     ====================================================================== */
+  /* 地の上に、ごく薄く置く大きな文字。写真は、この文字の上に重なる */
+  .ghost {
+    position: absolute;
+    z-index: 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 0.8;
+    letter-spacing: -0.02em;
+    color: var(--color-paper-3);
+    white-space: nowrap;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .ghost::before {
+    content: attr(data-text);
+  }
+  /* スマートフォンでは、下の小さな写真2枚のうしろに置く（文章のうしろには置かない） */
+  .space-ghost {
+    bottom: 9rem;
+    right: -0.06em;
+    font-size: 10rem;
+  }
+  @media (min-width: 768px) {
+    .space-ghost {
+      top: 36%;
+      bottom: auto;
+      right: -0.04em;
+      font-size: clamp(12rem, 33cqw, 36rem);
+    }
+  }
+
+  /* ======================================================================
+     トップ：ブログ（題名を大きく並べる。PC では、載せた記事の写真が右に出る）
+     ====================================================================== */
+  .jr-word {
+    font-size: clamp(5rem, 27cqw, 12rem);
+    line-height: 0.8;
+    color: var(--color-ink);
+    /* 斜体の J は、尾が左へ大きく張り出す。幹が器の端にそろって見える位置まで、右へ寄せる */
+    margin-left: 0.05em;
+    white-space: nowrap;
+    /* 飾りの文字。字の箱が上のラベルに重なるので、操作の対象から外す */
+    pointer-events: none;
+  }
+  @media (min-width: 1024px) {
+    .jr-word {
+      font-size: clamp(11rem, 17cqw, 20rem);
+    }
+  }
+  /*
+    罫は、行の中に置いた1px の箱（疑似要素）で引く。
+    ここだけ .rows を使わないのは、PC で写真を「一覧の外枠」を基準に置くため（行を基準にすると、写真が行ごとにずれる）。
+  */
+  .jr-item::before,
+  .jr-item:last-child::after {
+    content: "";
+    display: block;
+    height: 1px;
+    background: var(--color-line);
+    transform-origin: left center;
+  }
+  .jr-link {
+    display: block;
+    padding-block: 1.6rem;
+  }
+  .jr-title {
+    margin-top: 0.4rem;
+    font-size: clamp(1.1875rem, 1rem + 1.2vw, 2.125rem);
+    line-height: 1.6;
+    letter-spacing: 0.05em;
+  }
+  .jr-photo {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    overflow: clip;
+    background: var(--color-paper-2);
+  }
+  .jr-photo > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* スマートフォン：1本目は大きな写真、3本目は小さな写真を右に。ほかは文字だけ（記事のあいだに、写真が自然に入る） */
+  @media (max-width: 1023px) {
+    .jr-item .jr-photo {
+      display: none;
+    }
+    .jr-item:nth-child(1) .jr-photo {
+      display: block;
+      aspect-ratio: 3 / 2;
+      margin: 0 calc(var(--edge) * -1) 1.25rem 0;
+    }
+    .jr-item:nth-child(3) .jr-link {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 32%;
+      column-gap: 1.25rem;
+      align-items: start;
+    }
+    .jr-item:nth-child(3) .jr-photo {
+      display: block;
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      aspect-ratio: 4 / 5;
+    }
+    .jr-item:nth-child(3) .jr-meta,
+    .jr-item:nth-child(3) .jr-title {
+      grid-column: 1;
+    }
+  }
+  @media (min-width: 1024px) {
+    .jr-body {
+      position: relative;
+    }
+    .jr-list {
+      width: 60%;
+    }
+    .jr-link {
+      padding-block: 2.1rem;
+    }
+    .jr-title {
+      transition: transform 0.9s var(--ease-quiet), color 0.6s var(--ease-quiet);
+    }
+    /* 写真は、一覧の右に重ねて置いておき、載せた記事のものだけを見せる */
+    .jr-photo {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 31%;
+      aspect-ratio: 4 / 5;
+      opacity: 0;
+      transition: opacity 0.7s var(--ease-quiet);
+      pointer-events: none;
+    }
+    .jr-photo > img {
+      scale: 1.07;
+      transition: scale 1.6s var(--ease-quiet);
+    }
+    /* 何も選んでいないときは、いちばん新しい記事の写真 */
+    .jr-item:first-child .jr-photo {
+      opacity: 1;
+    }
+    .jr-list:has(.jr-item:hover, .jr-item:focus-within) .jr-item:first-child:not(:hover):not(:focus-within) .jr-photo {
+      opacity: 0;
+    }
+    .jr-item:hover .jr-photo,
+    .jr-item:focus-within .jr-photo {
+      opacity: 1;
+    }
+    .jr-item:hover .jr-photo > img,
+    .jr-item:focus-within .jr-photo > img,
+    .jr-item:first-child .jr-photo > img {
+      scale: 1;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .jr-item:hover .jr-title {
+        transform: translateX(0.75rem);
+      }
+    }
+  }
+
+  /* ======================================================================
+     店舗情報：営業時間を、大きな数字で
+     ====================================================================== */
+  .hours > div {
+    padding-block: 1.25rem;
+  }
+  .hours dt {
+    font-size: 0.8125rem;
+    letter-spacing: 0.14em;
+    color: var(--color-mute);
+  }
+  .hours-time {
+    display: flex;
+    align-items: center;
+    gap: 0.22em;
+    font-family: var(--font-display);
+    font-size: clamp(2.75rem, 1.6rem + 5.4vw, 6.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+    font-variant-numeric: lining-nums;
+  }
+  .hours-dash {
+    display: block;
+    flex: none;
+    width: 0.5em;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+  }
+  .hours-note {
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    color: var(--color-ink-2);
+  }
+
+  /* 地図。色を少しだけ抑える */
+  .map-frame iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    filter: grayscale(0.3) contrast(0.96);
+  }
+
+  /* ======================================================================
+     フッター（黒い外壁の色の上に、店名を幅いっぱいに）
+     ====================================================================== */
+  .site-footer {
+    position: relative;
+    /*
+      スクロールの位置合わせ（scroll anchoring）の目印に、フッターを選ばせない。
+      フッターは、ページを移っても同じ要素のまま残る。背が高いので、短いページの末尾では画面のほとんどを占める。
+      そこから「戻る」で長いページへ戻ると、Firefox がフッターを目印にして位置を合わせ直し、
+      見ていた場所ではなく、ページのいちばん下に着いてしまう（実際に起きた）。
+    */
+    overflow-anchor: none;
+    background: var(--color-night);
+    color: #cfc9be;
+    overflow: hidden;
+    overflow: clip;
+    container-type: inline-size;
+  }
+  .site-footer a {
+    color: inherit;
+  }
+  .site-footer a.footer-mark {
+    color: #ece7dd;
+  }
+  /* 黒い地の上では、フォーカスの輪を明るい水色にする（濃い水色は沈んで見えない） */
+  .site-footer :focus-visible {
+    outline-color: var(--color-door);
+  }
+  .site-footer .t-label {
+    color: var(--color-door);
+  }
+  /* 店名。左右の余白を残して、幅いっぱいになる大きさ（字幅は、実測で 4.12em） */
+  .footer-mark {
+    display: block;
+    font-family: var(--font-display);
+    font-size: calc((100cqw - var(--gutter) * 2) / 4.17);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    color: #f3efe6;
+    margin-left: -0.03em;
+  }
+  .footer-mark i {
+    font-style: italic;
+  }
+
+  /* ======================================================================
+     ページの移り変わり（生成りの幕が下から上がって覆い、次のページの上を、上へ抜ける）
+     ====================================================================== */
+  .veil {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: var(--color-paper);
+    border-top: 1px solid var(--color-door);
+    transform: translateY(101%);
+    pointer-events: none;
+    visibility: hidden;
+  }
+  html.is-loaded .veil {
+    background-image: url("/textures/grain.png");
+    background-size: 96px 96px;
+  }
+  .veil[data-state="in"] {
+    visibility: visible;
+    animation: veil-in 0.5s var(--ease-door) forwards;
+  }
+  .veil[data-state="out"] {
+    visibility: visible;
+    animation: veil-out 0.75s var(--ease-door) forwards;
+  }
+  @keyframes veil-in {
+    from {
+      transform: translateY(101%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes veil-out {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-101%);
+    }
+  }
+
+  /* ======================================================================
+     下層ページの冒頭（固定のヘッダーの分を含む）
+     見出しと説明は、少し下から、静かに位置が決まる（JS を待たない）。
+     隠してから現すことはしない。下層ページでは、この文字が「いちばん大きな要素」になるので、
+     隠すと、その分だけ表示の速さの計測（LCP）が遅れる。動かすのは位置だけ。
+     ====================================================================== */
+  .page-head {
+    padding-top: calc(var(--header-h) + clamp(2rem, 6vw, 5rem));
+  }
+  .page-head .line-in {
+    animation: settle-in 1.1s var(--ease-quiet) calc(var(--i, 0) * 0.09s) backwards;
+  }
+  .page-head .head-fade {
+    animation: settle-in 1.1s var(--ease-quiet) 0.16s backwards;
+  }
+  @keyframes settle-in {
+    from {
+      transform: translateY(0.7em);
+    }
+  }
+
+  /* ======================================================================
+     読みもの（記事の本文）。読みやすさを優先して、動かさない
+     ====================================================================== */
   .prose {
     color: var(--color-ink-2);
+    font-size: 1rem;
   }
   .prose > * + * {
     margin-top: 1.75em;
   }
   .prose h2 {
     margin-top: 3.6em;
-    font-size: clamp(1.25rem, 1.16rem + 0.4vw, 1.4375rem);
+    font-size: clamp(1.3125rem, 1.2rem + 0.5vw, 1.5625rem);
     line-height: 1.8;
     letter-spacing: 0.07em;
-    scroll-margin-top: calc(var(--header-h) + 1.5rem);
+    scroll-margin-top: 1rem;
   }
   /* 節の区切り。罫ではなく、扉の水色の短い線を1本 */
   .prose h2::before {
@@ -542,7 +1528,7 @@
   }
   .prose h3 {
     margin-top: 2.6em;
-    font-size: 1.0625rem;
+    font-size: 1.125rem;
     line-height: 1.85;
     letter-spacing: 0.06em;
   }
@@ -556,7 +1542,7 @@
     text-decoration-thickness: 1px;
     text-underline-offset: 0.4em;
     text-decoration-color: var(--color-door);
-    transition: text-decoration-color 0.4s var(--ease-quiet), color 0.4s var(--ease-quiet);
+    transition: text-decoration-color 0.5s var(--ease-quiet), color 0.5s var(--ease-quiet);
   }
   .prose a:hover {
     color: var(--color-door-deep);
@@ -633,88 +1619,416 @@
     margin-block: 3em;
   }
 
-  /* ---- 現れかた ---------------------------------------------------------- */
-  /*
-    動きは3つだけ。
-      1) 写真が、画面に入ったときに幕が上がるように現れる（位置は動かさない。中の写真はわずかに引く）
-      2) 最初の画面の文字が、一度だけゆっくり現れる
-      3) ヒーローの写真が、ごくわずかに引いていく
-    文字の区画は動かさない（区画ごとに下からふわっと出す、という動きは使わない）。
-    JS が動かないときは、html に .js が付かないので、すべて最初から見えている。
-  */
-  .js [data-reveal] > .photo-in {
-    clip-path: inset(0 0 100% 0);
-    transition: clip-path 1.2s var(--ease-quiet);
-    transition-delay: var(--reveal-delay, 0s);
+  /* ======================================================================
+     現れかた
+     役割ごとに、動きを分けている（同じ「下からふわっと」を全部に付けない）。
+       幕      … 写真。枠は動かさず、幕が上がる／横に開く。中の写真は、わずかに引く      data-reveal="up|left|right"
+       行      … 大見出し。意味のまとまり（行）ごとに、下からせり上がる                  data-reveal="lines"
+       罫      … 行の並び・定義リスト。罫が左から引かれ、文字があとから現れる            data-reveal="rows"
+       ひらく  … 小さなラベル。左から、文字が現れる                                      data-reveal="wipe"
+       うかぶ  … 短い文のまとまり。ごくわずかに浮かぶ                                    data-reveal="fade"
+     本文の段落は動かさない。
+     「現れる前」の姿は、html に .js が付いたときだけ作る（JS が動かないときは、すべて最初から見えている）。
+     現れる動きは transition ではなく animation にしてある。終わると、切り抜きも位置のずれも残らない。
+     画面の上へ過ぎていた要素（.is-past）は、動かさずに出す。
+     ====================================================================== */
+  /* 幕（切り抜くのは、見張っている箱の「子」。箱そのものを切り抜くと、画面に入ったと判定されない） */
+  .js [data-reveal="up"]:not(.is-in) > .photo-in {
+    clip-path: inset(100% 0 0 0);
   }
-  .js [data-reveal] > .photo-in > img {
-    transform: scale(1.07);
-    transition: transform 1.8s var(--ease-quiet);
-    transition-delay: var(--reveal-delay, 0s);
+  .js [data-reveal="left"]:not(.is-in) > .photo-in {
+    clip-path: inset(0 100% 0 0);
   }
-  .js [data-reveal].is-in > .photo-in {
-    clip-path: inset(0);
+  .js [data-reveal="right"]:not(.is-in) > .photo-in {
+    clip-path: inset(0 0 0 100%);
   }
-  .js [data-reveal].is-in > .photo-in > img {
-    transform: none;
+  .js [data-reveal="up"].is-in:not(.is-past) > .photo-in {
+    animation: curtain-up 1.4s var(--ease-quiet) var(--d, 0s) backwards;
+  }
+  .js [data-reveal="left"].is-in:not(.is-past) > .photo-in {
+    animation: curtain-left 1.4s var(--ease-quiet) var(--d, 0s) backwards;
+  }
+  .js [data-reveal="right"].is-in:not(.is-past) > .photo-in {
+    animation: curtain-right 1.4s var(--ease-quiet) var(--d, 0s) backwards;
+  }
+  .js .photo[data-reveal].is-in:not(.is-past) > .photo-in img {
+    animation: settle 2s var(--ease-quiet) var(--d, 0s) backwards;
+  }
+  @keyframes curtain-up {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  @keyframes curtain-left {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  @keyframes curtain-right {
+    from {
+      clip-path: inset(0 0 0 100%);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  @keyframes settle {
+    from {
+      scale: 1.1;
+    }
   }
 
-  .fade-in {
-    animation: fade-in 1.6s var(--ease-quiet) both;
-    animation-delay: var(--fade-delay, 0.2s);
+  /* 行（切り抜きは .line に、動きは .line-in に。動いているあいだだけ切り抜く） */
+  .js [data-reveal="lines"]:not(.is-in) .line {
+    clip-path: inset(-0.12em -0.3em -0.2em -0.3em);
+  }
+  .js [data-reveal="lines"]:not(.is-in) .line-in {
+    transform: translateY(132%);
+  }
+  .js [data-reveal="lines"].is-in:not(.is-past) .line {
+    animation: line-mask 1.25s linear calc(var(--d, 0s) + var(--i, 0) * 0.12s) backwards;
+  }
+  .js [data-reveal="lines"].is-in:not(.is-past) .line-in {
+    animation: line-up 1.25s var(--ease-quiet) calc(var(--d, 0s) + var(--i, 0) * 0.12s) backwards;
+  }
+  @keyframes line-mask {
+    from,
+    to {
+      clip-path: inset(-0.12em -0.3em -0.2em -0.3em);
+    }
+  }
+  @keyframes line-up {
+    from {
+      transform: translateY(132%);
+    }
+  }
+
+  /* 罫 */
+  .js [data-reveal="rows"]:not(.is-in) > *::before,
+  .js [data-reveal="rows"]:not(.is-in) > *::after {
+    transform: scaleX(0);
+  }
+  .js [data-reveal="rows"]:not(.is-in) > * > * {
+    opacity: 0;
+  }
+  .js [data-reveal="rows"].is-in:not(.is-past) > *::before,
+  .js [data-reveal="rows"].is-in:not(.is-past) > *::after {
+    animation: rule-draw 1.3s var(--ease-door) calc(var(--d, 0s) + var(--n, 0) * 0.07s) backwards;
+  }
+  .js [data-reveal="rows"].is-in:not(.is-past) > * > * {
+    animation: fade-in 1.1s var(--ease-quiet) calc(var(--d, 0s) + 0.25s + var(--n, 0) * 0.07s) backwards;
+  }
+  [data-reveal="rows"] > :nth-child(2) {
+    --n: 1;
+  }
+  [data-reveal="rows"] > :nth-child(3) {
+    --n: 2;
+  }
+  [data-reveal="rows"] > :nth-child(4) {
+    --n: 3;
+  }
+  [data-reveal="rows"] > :nth-child(5) {
+    --n: 4;
+  }
+  [data-reveal="rows"] > :nth-child(6) {
+    --n: 5;
+  }
+  [data-reveal="rows"] > :nth-child(n + 7) {
+    --n: 6;
+  }
+  @keyframes rule-draw {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  /* ひらく */
+  .js [data-reveal="wipe"]:not(.is-in) > * {
+    clip-path: inset(0 100% 0 0);
+  }
+  .js [data-reveal="wipe"].is-in:not(.is-past) > * {
+    animation: wipe 1.1s var(--ease-door) var(--d, 0s) backwards;
+  }
+  @keyframes wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* うかぶ */
+  .js [data-reveal="fade"]:not(.is-in) {
+    opacity: 0;
+  }
+  .js [data-reveal="fade"].is-in:not(.is-past) {
+    animation: fade-rise 1.2s var(--ease-quiet) var(--d, 0s) backwards;
+  }
+  @keyframes fade-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.9rem);
+    }
   }
   @keyframes fade-in {
     from {
       opacity: 0;
     }
-    to {
-      opacity: 1;
+  }
+
+  /* ======================================================================
+     スクロールに合わせた動き（視差・横に流れるメニュー）
+     CSS のスクロール連動アニメーションだけで作る（JS の計算をはさまないので、スクロールが重くならない）。
+     使えないブラウザでは、何も動かない（写真は止まったまま、メニューは縦に並ぶ）。
+     ====================================================================== */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      /* 視差：写真が、枠の中で数十px だけ遅れて動く */
+      .photo[data-px] {
+        view-timeline: --ph block;
+      }
+      .photo-px {
+        animation: px-shift linear;
+        animation-timeline: --ph;
+        animation-range: cover 0% cover 100%;
+      }
+      @keyframes px-shift {
+        from {
+          translate: 0 calc(var(--px, 0px) * -1);
+        }
+        to {
+          translate: 0 var(--px, 0px);
+        }
+      }
+      /* 最初の画面の写真は、送られていくあいだ、少し遅れてついてくる */
+      .hero-media {
+        animation: hero-drift linear both;
+        animation-timeline: scroll(root block);
+        animation-range: 0 100svh;
+      }
+      @keyframes hero-drift {
+        to {
+          translate: 0 11%;
+        }
+      }
+      /* 地の上の大きな文字は、写真より遅く動く */
+      .ghost {
+        animation: ghost-drift linear;
+        animation-timeline: view();
+        animation-range: cover 0% cover 100%;
+      }
+      @keyframes ghost-drift {
+        from {
+          translate: 0 -18%;
+        }
+        to {
+          translate: 0 18%;
+        }
+      }
+    }
+
+    /*
+      横に流れるメニュー（PC だけ・サイトの中でここ1か所だけ）。
+      区画の高さを「画面の高さ＋横に流す距離」にして、中を画面に貼りつける。
+      縦に送った分だけ、写真の列が左へ動く（スクロールの操作そのものは、ブラウザのまま）。
+      列の幅は、写真の大きさの係数（--k1〜--k4）から計算している。写真の幅も同じ係数から出すので、ずれない。
+      中にリンクは置かない（画面の外にあるリンクに、キーボードで移れてしまうため）。リンクは、下の帯に置く。
+    */
+    @media (min-width: 1024px) and (min-height: 640px) and (prefers-reduced-motion: no-preference) {
+      /* とても広い画面でも、列が画面の端から端まで流れるように、この区画だけ最大幅を外す */
+      .section:has(> .hstrip) {
+        max-width: none;
+      }
+      .hstrip {
+        --u: min(60svh, 44rem);
+        --g: clamp(3rem, 6cqw, 7.5rem);
+        --tw: clamp(20rem, 27cqw, 28rem);
+        --k1: 1.5;
+        --k2: 0.62;
+        --k3: 0.92;
+        --k4: 0.74;
+        --track: calc(var(--gutter) * 3 + var(--tw) + var(--g) * 4 + (var(--k1) + var(--k2) + var(--k3) + var(--k4)) * var(--u));
+        --travel: max(0px, calc(var(--track) - 100cqw));
+        height: calc(100svh + var(--travel));
+        view-timeline: --hs block;
+      }
+      .hstrip-pin {
+        position: sticky;
+        top: 0;
+        display: grid;
+        /* 列の幅は、器の幅で止める（中の写真の列は、はみ出したまま横に流れる） */
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        width: 100%;
+        height: 100svh;
+        padding-block: 5rem 1.75rem;
+        overflow: hidden;
+        overflow: clip;
+      }
+      .hs-idx {
+        padding-inline: var(--gutter);
+      }
+      .hstrip-track {
+        display: flex;
+        align-items: center;
+        gap: var(--g);
+        width: max-content;
+        margin-top: 0;
+        padding-inline: var(--gutter) calc(var(--gutter) * 2);
+        animation: hs-move linear both;
+        animation-timeline: --hs;
+        animation-range: contain 0% contain 100%;
+      }
+      @keyframes hs-move {
+        to {
+          transform: translateX(calc(var(--travel) * -1));
+        }
+      }
+      .hs-title {
+        flex: none;
+        width: var(--tw);
+      }
+      .hs-item {
+        flex: none;
+        margin: 0;
+      }
+      .hs-1 {
+        width: calc(var(--k1) * var(--u));
+      }
+      .hs-1 .photo {
+        margin-left: 0;
+      }
+      .hs-2 {
+        width: calc(var(--k2) * var(--u));
+        margin-top: calc(var(--u) * 0.2);
+      }
+      .hs-3 {
+        width: calc(var(--k3) * var(--u));
+        margin-bottom: calc(var(--u) * 0.26);
+      }
+      .hs-4 {
+        width: calc(var(--k4) * var(--u));
+        margin-top: calc(var(--u) * 0.06);
+      }
+      /* 横に流れてくるので、幕の動きは付けない（最初から見えている） */
+      .js .hstrip .photo[data-reveal]:not(.is-in) > .photo-in {
+        clip-path: none;
+      }
+      .js .hstrip .photo[data-reveal].is-in > .photo-in,
+      .js .hstrip .photo[data-reveal].is-in > .photo-in img {
+        animation: none;
+      }
+      .hs-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 3rem;
+        margin-top: 0;
+        padding-inline: var(--gutter);
+      }
+      /* いま、列のどのあたりにいるか（細い線） */
+      .hs-progress {
+        position: relative;
+        display: block;
+        flex: 1;
+        max-width: 22rem;
+        height: 1px;
+        background: var(--color-line);
+      }
+      .hs-progress > i {
+        position: absolute;
+        inset: 0;
+        background: var(--color-door-deep);
+        transform-origin: left center;
+        animation: hs-progress linear both;
+        animation-timeline: --hs;
+        animation-range: contain 0% contain 100%;
+      }
+      @keyframes hs-progress {
+        from {
+          transform: scaleX(0);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
     }
   }
 
-  /* 印刷のときは、まだ現れていない写真も出す。画面外の区画も描き、ヘッダーは紙の先頭に置く */
+  /* ======================================================================
+     印刷・動きを減らす設定
+     ====================================================================== */
+  /* 印刷のときは、まだ現れていないものも出す。ヘッダーは紙の先頭に置く */
   @media print {
     .js [data-reveal] > .photo-in,
-    .js [data-reveal] > .photo-in > img {
-      clip-path: none;
-      transform: none;
-      transition: none;
+    .js [data-reveal] .line,
+    .js [data-reveal] > * {
+      clip-path: none !important;
     }
-    .section:not(.no-cv) {
-      content-visibility: visible;
+    .js [data-reveal],
+    .js [data-reveal] > * > *,
+    .js [data-reveal] .line-in,
+    .js [data-reveal] > *::before,
+    .js [data-reveal] > *::after {
+      opacity: 1 !important;
+      transform: none !important;
     }
     .site-header {
       position: static;
+      transform: none !important;
     }
     .page-head {
       padding-top: 2rem;
     }
+    .opening,
+    .veil {
+      display: none;
+    }
   }
 
+  /*
+    動きを減らす設定のとき。
+    視差・横に流れるメニュー・ページの幕・最初の演出・現れる動きを、すべて止める（上の @supports の中は、もともと動かない）。
+  */
   @media (prefers-reduced-motion: reduce) {
     .js [data-reveal] > .photo-in,
-    .js [data-reveal] > .photo-in > img {
-      clip-path: none;
+    .js [data-reveal] .line,
+    .js [data-reveal] > * {
+      clip-path: none !important;
+    }
+    .js [data-reveal],
+    .js [data-reveal] > * > *,
+    .js [data-reveal] .line-in,
+    .js [data-reveal] > *::before,
+    .js [data-reveal] > *::after {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+    .opening,
+    .veil {
+      display: none !important;
+    }
+    html[data-hide] .site-header {
       transform: none;
-      transition: none;
-    }
-    .fade-in,
-    .menu-dialog[open],
-    .hero-media img {
-      animation: none;
-    }
-    .more::after,
-    .link,
-    .nav-link,
-    .site-header,
-    .site-header .hide-on-hero {
-      transition: none;
     }
   }
 }
 
 /*
-  器（.wrap）の中に置いた写真を、片側だけ区画の端まで伸ばす。
+  器の中に置いた写真を、片側だけ区画の端まで伸ばす。
   写真だけが外へ出て、下の説明文は器の端にそろったまま残る。
   @utility で定義してあるので、md:pull-l のように画面の幅ごとに付け外しできる。
 */

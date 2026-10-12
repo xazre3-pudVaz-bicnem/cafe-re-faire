@@ -29,7 +29,7 @@ export function MonthCalendar() {
             <h3 className="t-h3">
               {year}年{month}月
             </h3>
-            <dl className="rows mt-4">
+            <dl className="rows mt-4" data-reveal="rows">
               <div className="grid grid-cols-[5.5em_minmax(0,1fr)] gap-x-5 py-5 md:grid-cols-[7.5em_minmax(0,1fr)]">
                 <dt className="text-[0.8125rem] leading-[2.45] tracking-[0.1em] text-mute">休み</dt>
                 <dd className="text-ink">

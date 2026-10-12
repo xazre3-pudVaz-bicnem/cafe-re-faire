@@ -1,27 +1,37 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
-import { navKeys, pages } from "@/data/pages";
-import { closedLine, fullAddress, site, sundayHours, weekdayHours } from "@/data/site";
-import { HeaderScroll } from "./HeaderScroll";
+import { Wordmark } from "@/components/ui/Wordmark";
+import { navKeys, pages, type PageKey } from "@/data/pages";
+import { closedLine, fullAddress, sundayHours, weekdayHours } from "@/data/site";
 import { MenuDialog } from "./MenuDialog";
 import { NavLinks } from "./NavLinks";
+
+/** 全画面メニューで、項目の右に小さく添える欧文（飾り。CSS で出すので、リンクの文言には入らない） */
+const EN: Record<PageKey, string> = { home: "Top", menu: "Menu", about: "About", access: "Access", blog: "Journal" };
 
 /**
  * ヘッダー。左に店名、右に4つのメニュー。予約や問い合わせのボタンは置かない。
  *
- * overHero はトップページ専用。最初の画面では写真の上に透けて重なり、店名を出さない
- * （ヒーローに大きく出ているため）。ヒーローを過ぎると、通常の表示になる。
+ * 最初は透けていて、下へ送ると上へ隠れ、上へ戻すと、ぼかした生成りの地を敷いて出てくる
+ * （状態は lib/boot-script.ts が <html> に書き、見た目は CSS が受け持つ）。
+ *
+ * overHero はトップページ専用。最初の画面では写真の上に白い文字で重なり、店名を出さない
+ * （ヒーローに大きく出ているため）。
  */
 export function Header({ overHero = false }: { overHero?: boolean }) {
-  const nav = navKeys.map((key) => ({ href: pages[key].path, label: pages[key].label }));
+  const nav = navKeys.map((key) => ({ key, href: pages[key].path, label: pages[key].label }));
+  const all = [{ key: "home" as PageKey, href: pages.home.path, label: pages.home.label }, ...nav];
 
   return (
     <header className="site-header" data-over-hero={overHero ? "" : undefined}>
       <a href="#main" className="sr-only-focusable">
         本文へ移動
       </a>
-      <div className="wrap flex h-full items-center justify-between gap-6">
+      <div className="flex h-full items-center justify-between gap-6 px-[var(--gutter)]">
         <Link href="/" className="hide-on-hero flex min-h-11 shrink-0 items-center">
-          <span className="latin-i text-[1.5rem] leading-none lg:text-[1.625rem]">{site.name}</span>
+          <span className="logo">
+            <Wordmark />
+          </span>
           <span className="sr-only">（トップページへ）</span>
         </Link>
 
@@ -31,21 +41,15 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
           </nav>
 
           <MenuDialog>
-            <div className="wrap flex min-h-[calc(100%-4rem)] flex-col pb-10 pt-4">
-              <p className="latin-i text-[2rem] leading-none text-ink">{site.name}</p>
-              <nav aria-label="メニュー" className="mt-9">
+            <div className="flex min-h-[calc(100%-var(--header-h))] flex-col px-[var(--gutter)] pb-10 pt-2">
+              <p className="logo menu-rise text-ink">
+                <Wordmark />
+              </p>
+              <nav aria-label="メニュー" className="mt-8">
                 <ul className="rows">
-                  <li>
-                    <Link href="/" className="flex min-h-[3.75rem] items-center font-[family-name:var(--font-mincho)] text-[1.125rem] tracking-[0.14em] text-ink">
-                      {pages.home.label}
-                    </Link>
-                  </li>
-                  {nav.map((item) => (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className="flex min-h-[3.75rem] items-center font-[family-name:var(--font-mincho)] text-[1.125rem] tracking-[0.14em] text-ink"
-                      >
+                  {all.map((item, i) => (
+                    <li key={item.href} className="menu-rise" style={{ "--i": i + 1 } as CSSProperties}>
+                      <Link href={item.href} className="menu-item" data-en={EN[item.key]}>
                         {item.label}
                       </Link>
                     </li>
@@ -53,7 +57,7 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
                 </ul>
               </nav>
 
-              <address className="t-note mt-auto pt-12">
+              <address className="t-note menu-rise mt-auto pt-12" style={{ "--i": 7 } as CSSProperties}>
                 <p>{fullAddress}</p>
                 <p>
                   {weekdayHours}／日曜・祝日 {sundayHours}
@@ -64,7 +68,6 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
           </MenuDialog>
         </div>
       </div>
-      {overHero && <HeaderScroll />}
     </header>
   );
 }

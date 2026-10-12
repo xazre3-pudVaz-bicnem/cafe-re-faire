@@ -78,31 +78,33 @@ export default async function BlogPostPage({ params }: Props) {
     <article>
       <header className="page-head wrap">
         <Breadcrumbs crumbs={crumbs} />
-        <p className="mt-8 flex flex-wrap items-center gap-x-5 text-[0.8125rem] leading-[1.8] tracking-[0.1em] text-mute md:mt-12">
-          <time dateTime={post.publishedAt} className="num text-[1rem]">
+        <p className="head-fade mt-8 flex flex-wrap items-center gap-x-5 text-[0.8125rem] leading-[1.8] tracking-[0.1em] text-mute md:mt-14">
+          <time dateTime={post.publishedAt} className="num text-[1.125rem]">
             {formatDate(post.publishedAt)}
           </time>
           {category && (
-            <Link href={`/blog/category/${category.slug}`} className="inline-flex min-h-11 items-center hover:text-ink">
-              {category.name}
+            <Link href={`/blog/category/${category.slug}`} className="inline-flex min-h-11 items-center">
+              <span className="ul">{category.name}</span>
             </Link>
           )}
         </p>
-        <h1 className="t-h1 mt-2 max-w-[26em]">
+        {/* 記事は、読みやすさを優先する。題名は大きくしすぎず、動きも、静かに浮かぶだけ */}
+        <h1 className="t-h1-article head-fade mt-2 max-w-[24em]">
           <Phrase>{post.title}</Phrase>
         </h1>
-        <p className="t-lead measure mt-7 md:mt-9">{post.description}</p>
+        <p className="t-lead measure head-fade mt-7 md:mt-9">{post.description}</p>
       </header>
 
-      <div className="cq mt-12 md:mt-16">
+      <div className="cq mt-12 md:mt-20">
         <div className="wrap">
           <Photo
             photo={photo}
             ratio="16/9"
             ratioSp="4/3"
             className="max-md:pull-r md:pull-l md:mr-[8%]"
-            sizes="(max-width: 767px) 94vw, 86vw"
+            sizes="(max-width: 767px) 94vw, 88vw"
             quality={85}
+            parallax={40}
             priority
           />
         </div>
@@ -112,11 +114,11 @@ export default async function BlogPostPage({ params }: Props) {
         {post.headings.length >= 3 && (
           <nav aria-label="この記事の目次" className="lg:col-span-3">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
-              <p className="label">目次</p>
+              <p className="t-kicker">目次</p>
               <ol className="mt-4 text-[0.875rem] leading-[1.8]">
                 {post.headings.map((h) => (
                   <li key={h.id}>
-                    <a href={`#${h.id}`} className="inline-flex min-h-11 items-center py-1 text-ink-2 hover:text-ink">
+                    <a href={`#${h.id}`} className="inline-flex min-h-11 items-center py-1 text-ink-2 transition-colors duration-500 hover:text-ink">
                       {h.text}
                     </a>
                   </li>
@@ -154,7 +156,7 @@ export default async function BlogPostPage({ params }: Props) {
       {related.length > 0 && (
         <section className="section pt-0!">
           <div className="wrap">
-            <h2 className="label">関連する記事</h2>
+            <h2 className="t-kicker">関連する記事</h2>
             <div className="mt-6">
               <PostRows posts={related} headingLevel={3} />
             </div>

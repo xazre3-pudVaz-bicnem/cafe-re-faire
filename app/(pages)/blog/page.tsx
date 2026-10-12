@@ -23,8 +23,8 @@ export default function BlogPage() {
 
   return (
     <>
-      <PageHead crumbs={crumbsFor(page)} title="ブログ" lead="メニューにまつわる話、カフェでの過ごし方、水沢と奥州のこと、季節のこと。店からのお知らせも、ここに載せています。" />
-      <section className="section no-cv">
+      <PageHead crumbs={crumbsFor(page)} label="Journal" title="ブログ" lead="メニューにまつわる話、カフェでの過ごし方、水沢と奥州のこと、季節のこと。店からのお知らせも、ここに載せています。" />
+      <section className="section">
         <BlogIndex posts={posts} total={all.length} page={1} basePath={page.path} />
       </section>
       <JsonLd graph={pageGraph(page, [blogNode(posts)], { type: "CollectionPage" })} />

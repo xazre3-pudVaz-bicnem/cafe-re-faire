@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     qualities: [75, 85],
+    // 元の写真は長辺 1,700px ほど。それより大きい幅（2048・3840）の候補は同じ画像になるだけなので、出さない（HTML が軽くなる）
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     // 写真はファイル名に内容のハッシュが付くので、長く持たせてよい
     minimumCacheTTL: 60 * 60 * 24 * 365,
   },

@@ -21,7 +21,7 @@ export function ShopFacts({ withAccessLinks = false }: { withAccessLinks?: boole
   const noticeMonth = notice ? Number(notice.month.slice(5, 7)) : null;
 
   return (
-    <dl className="facts">
+    <dl className="facts" data-reveal="rows">
       <div>
         <dt>店名</dt>
         <dd>

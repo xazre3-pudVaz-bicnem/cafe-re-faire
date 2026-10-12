@@ -18,7 +18,7 @@ export function buildFactSheet(today: string = todayJst()): string {
     `店名: ${site.name}（読み: ${site.reading}）。${site.kind}。`,
     `場所: ${site.address.region}${site.address.locality}${site.address.district}。住所は ${fullAddress}。${site.access.road}。近くに${site.landmark}がある。`,
     `オープン: ${jaDate(site.openedOn)}。`,
-    `営業時間: ${weekdayHours}。日曜と祝日は ${sundayHours}。（${jaTime(weekday.opens)}に開き、平日は${jaTime(weekday.closes)}まで、日曜と祝日は${jaTime(sundayHoliday.closes)}まで。ラストオーダーは${jaTime(weekday.lastOrder)}と${jaTime(sundayHoliday.lastOrder)}）`,
+    `営業時間: ${weekdayHours}。日曜と祝日は ${sundayHours}。（${jaTime(weekday.opens)}に開き、${jaTime(weekday.closes)}まで。土曜も同じ。日曜と祝日だけ、${jaTime(sundayHoliday.closes)}まで。ラストオーダーは${jaTime(weekday.lastOrder)}と${jaTime(sundayHoliday.lastOrder)}）`,
     `定休日: ${site.hours.closedDay}。ほかに不定休あり。月ごとの営業日は、店のInstagramで告知している。`,
     `駐車場: ${parkingLine}。外壁の水色の看板に、駐車場の方向を示す矢印がある。`,
     `行き方の目安: ${routes}。`,
