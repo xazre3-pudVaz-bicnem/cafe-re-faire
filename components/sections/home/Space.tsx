@@ -39,11 +39,12 @@ export function Space() {
         </div>
 
         {/*
-          PC は2段の格子。左上に文章、右に縦長の写真（2段ぶち抜き）、左下に小さな写真2枚。
+          PC（1024px から）は2段の格子。左上に文章、右に縦長の写真（2段ぶち抜き）、左下に小さな写真2枚。
           小さな写真は下の段に置き場所を持たせてある（上へずらして文章に重ねる組み方にはしない。幅によって文章が隠れるため）。
+          タブレット（縦）は、スマートフォンと同じ並べ方（PC の並べ方を 768px に当てると、小さな写真が 90px ほどになる）。
         */}
-        <div className="mt-14 grid grid-cols-12 gap-x-4 md:mt-24 md:grid-rows-[auto_auto] md:gap-x-8 lg:mt-32">
-          <div className="col-span-12 md:col-span-5 md:col-start-2 md:row-start-1 md:pt-6 lg:pt-16">
+        <div className="mt-14 grid grid-cols-12 gap-x-4 md:mt-24 md:gap-x-8 lg:mt-32 lg:grid-rows-[auto_auto]">
+          <div className="col-span-12 lg:col-span-5 lg:col-start-2 lg:row-start-1 lg:pt-16">
             <h2 className="t-h2" data-reveal="lines">
               <Lines lines={["木の柱のある、", "明るい店内"]} />
             </h2>
@@ -53,7 +54,7 @@ export function Space() {
             </div>
           </div>
 
-          <div className="col-span-10 col-start-3 mt-14 md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1 md:mt-0">
+          <div className="col-span-10 col-start-3 mt-14 md:mt-20 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1 lg:mt-0">
             <Photo
               photo={photos.interior02}
               ratio="3/4"
@@ -61,15 +62,15 @@ export function Space() {
               className="pull-r"
               reveal="right"
               parallax={40}
-              sizes="(max-width: 767px) 84vw, 44vw"
+              sizes="(max-width: 1023px) 84vw, 44vw"
             />
           </div>
 
-          <div className="col-span-7 mt-12 md:col-span-3 md:col-start-2 md:row-start-2 md:mt-16 md:self-end">
-            <Photo photo={photos.counter} ratio="3/4" position="50% 40%" parallax={24} sizes="(max-width: 767px) 56vw, 26vw" />
+          <div className="col-span-7 mt-12 md:mt-16 lg:col-span-3 lg:col-start-2 lg:row-start-2 lg:self-end">
+            <Photo photo={photos.counter} ratio="3/4" position="50% 40%" parallax={24} sizes="(max-width: 1023px) 56vw, 22vw" />
           </div>
-          <div className="col-span-5 mt-28 md:col-span-2 md:col-start-6 md:row-start-2 md:mb-14 md:mt-16 md:self-end">
-            <Photo photo={photos.wallArt} ratio="3/4" position="40% 30%" reveal="left" delay={0.12} parallax={14} sizes="(max-width: 767px) 38vw, 17vw" />
+          <div className="col-span-5 mt-28 md:mt-40 lg:col-span-2 lg:col-start-6 lg:row-start-2 lg:mb-14 lg:mt-16 lg:self-end">
+            <Photo photo={photos.wallArt} ratio="3/4" position="40% 30%" reveal="left" delay={0.12} parallax={14} sizes="(max-width: 1023px) 38vw, 14vw" />
           </div>
         </div>
       </div>

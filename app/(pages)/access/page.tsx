@@ -30,6 +30,13 @@ const page = pages.access;
 
 export const metadata: Metadata = pageMetadata(page);
 
+/*
+  1時間ごとに描き直す（アクセスがあったときに、裏で作り直される）。
+  このページの「今月の営業日」・よくある質問のテイクアウトの価格・構造化データの臨時休業は、今日の日付で内容が変わる。
+  公開（デプロイ）のたびに作り直されるが、それを待たずに日付の変わり目を反映するため。
+*/
+export const revalidate = 3600;
+
 /** 区画の小さな番号（01 Information のような） */
 function Index({ n, children }: { n: string; children: string }) {
   return (
@@ -70,7 +77,7 @@ export default function AccessPage() {
               <Hours />
             </div>
             <div className="lg:col-span-5 lg:col-start-8">
-              <Photo photo={photos.parkingSign} ratio="4/3" sizes="(max-width: 1023px) 88vw, 38vw" parallax={30} priority />
+              <Photo photo={photos.parkingSign} ratio="4/3" sizes="(max-width: 1023px) 88vw, 38vw" parallax={30} priority contained />
               <p className="caption">外壁の水色の看板が目印。駐車場は、矢印の方向です。</p>
             </div>
           </div>

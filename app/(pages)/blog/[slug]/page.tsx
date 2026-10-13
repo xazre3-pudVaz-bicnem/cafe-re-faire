@@ -64,6 +64,9 @@ export default async function BlogPostPage({ params }: Props) {
   const path = `/blog/${post.slug}`;
   const category = categoryBySlug(post.category);
   const photo = photos[post.eyecatch];
+  // 縦位置の写真かどうか（見出し写真の枠を替える）と、目次を出すかどうか（本文の列の位置が変わる）
+  const portrait = photo.image.width / photo.image.height < 0.9;
+  const hasToc = post.headings.length >= 3;
   const related = getRelatedPosts(post, 3);
   const { newer, older } = getAdjacentPosts(post);
 
@@ -95,23 +98,35 @@ export default async function BlogPostPage({ params }: Props) {
         <p className="t-lead measure head-fade mt-7 md:mt-9">{post.description}</p>
       </header>
 
-      <div className="cq mt-12 md:mt-20">
-        <div className="wrap">
-          <Photo
-            photo={photo}
-            ratio="16/9"
-            ratioSp="4/3"
-            className="max-md:pull-r md:pull-l md:mr-[8%]"
-            sizes="(max-width: 767px) 94vw, 88vw"
-            quality={85}
-            parallax={40}
-            priority
-          />
+      {portrait ? (
+        /*
+          縦位置の写真。横長の枠（16:9）に入れると、上下が大きく切れ、小さな写真は引き伸ばされてぼやける。
+          縦長の枠のまま、本文の列の左にそろえて、小さめに置く。
+        */
+        <div className="wrap mt-12 md:mt-20 lg:grid lg:grid-cols-12 lg:gap-x-8">
+          <div className={`w-[64%] max-w-[24rem] md:w-[46%] lg:col-span-4 lg:w-auto lg:max-w-none ${hasToc ? "lg:col-start-5" : "lg:col-start-3"}`}>
+            <Photo photo={photo} ratio="4/5" sizes="(max-width: 767px) 58vw, (max-width: 1023px) 44vw, 28vw" quality={85} parallax={24} priority contained />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="cq mt-12 md:mt-20">
+          <div className="wrap">
+            <Photo
+              photo={photo}
+              ratio="16/9"
+              ratioSp="4/3"
+              className="max-md:pull-r md:pull-l md:mr-[8%]"
+              sizes="(max-width: 767px) 94vw, 88vw"
+              quality={85}
+              parallax={40}
+              priority
+            />
+          </div>
+        </div>
+      )}
 
       <div className="wrap mt-14 grid gap-y-10 md:mt-20 lg:grid-cols-12 lg:gap-x-8">
-        {post.headings.length >= 3 && (
+        {hasToc && (
           <nav aria-label="この記事の目次" className="lg:col-span-3">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
               <p className="t-kicker">目次</p>
@@ -128,7 +143,7 @@ export default async function BlogPostPage({ params }: Props) {
           </nav>
         )}
 
-        <div className={post.headings.length >= 3 ? "lg:col-span-7 lg:col-start-5" : "lg:col-span-7 lg:col-start-3"}>
+        <div className={hasToc ? "lg:col-span-7 lg:col-start-5" : "lg:col-span-7 lg:col-start-3"}>
           <ArticleBody body={post.body} headings={post.headings} />
 
           <footer className="mt-16 border-t border-line pt-8">

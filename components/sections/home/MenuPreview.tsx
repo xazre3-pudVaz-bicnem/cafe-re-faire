@@ -44,13 +44,30 @@ export function MenuPreview() {
               </p>
             </div>
 
+            {/*
+              sizes の最後の行は PC。横に流れるときの幅（画面の高さで決まる。globals.css の --u × 係数）と、
+              縦に組むときの幅（画面の幅で決まる）の、大きいほうを書いてある。どちらの組み方でも、ぼやけない。
+            */}
             <figure className="hs-item hs-1 zoom">
-              <Photo photo={photos.plateRoastBeef} ratio="3/2" ratioSp="5/4" parallax={36} sizes="(max-width: 1023px) 96vw, 62vw" quality={85} />
+              <Photo
+                photo={photos.plateRoastBeef}
+                ratio="3/2"
+                ratioSp="5/4"
+                parallax={36}
+                sizes="(max-width: 1023px) 96vw, max(65vw, min(90vh, 1056px, 72vw))"
+                quality={85}
+              />
               <figcaption className="caption">曜日プレート。写真はローストビーフ。</figcaption>
             </figure>
 
             <figure className="hs-item hs-2 zoom">
-              <Photo photo={photos.cakeSweetPotato} ratio="4/5" reveal="right" parallax={22} sizes="(max-width: 767px) 64vw, 28vw" />
+              <Photo
+                photo={photos.cakeSweetPotato}
+                ratio="4/5"
+                reveal="right"
+                parallax={22}
+                sizes="(max-width: 767px) 64vw, (max-width: 1023px) 54vw, max(22vw, min(37.2vh, 437px, 30vw))"
+              />
               <figcaption className="caption flex flex-wrap items-baseline gap-x-[0.8em]">
                 <span>{sweetPotato.name}</span>
                 <span className="whitespace-nowrap">
@@ -60,12 +77,17 @@ export function MenuPreview() {
             </figure>
 
             <figure className="hs-item hs-3 zoom">
-              <Photo photo={photos.plateTacoRice} ratio="4/3" reveal="left" parallax={30} sizes="(max-width: 767px) 86vw, (max-width: 1023px) 56vw, 40vw" />
+              <Photo photo={photos.plateTacoRice} ratio="4/3" reveal="left" parallax={30} sizes="(max-width: 767px) 86vw, (max-width: 1023px) 78vw, 53vw" />
               <figcaption className="caption">曜日プレート。写真はタコライス。</figcaption>
             </figure>
 
             <figure className="hs-item hs-4 zoom">
-              <Photo photo={photos.cakeCaramel} ratio="5/6" parallax={18} sizes="(max-width: 767px) 56vw, 32vw" />
+              <Photo
+                photo={photos.cakeCaramel}
+                ratio="5/6"
+                parallax={18}
+                sizes="(max-width: 767px) 56vw, (max-width: 1023px) 46vw, max(22vw, min(44.4vh, 521px, 36vw))"
+              />
               <figcaption className="caption flex flex-wrap items-baseline gap-x-[0.8em]">
                 <span>{caramel.name}</span>
                 <span className="whitespace-nowrap">

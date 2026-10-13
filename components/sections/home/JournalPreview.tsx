@@ -41,14 +41,23 @@ export function JournalPreview() {
 
         <div className="jr-body mt-10 md:mt-16">
           <ul className="jr-list" data-reveal="rows">
-            {posts.map((post) => {
+            {posts.map((post, i) => {
               const photo = photos[post.eyecatch];
               const category = categoryBySlug(post.category);
+              /*
+                写真の枠は縦長（4:5）。横位置の写真は、枠の幅より広く描かれるので、その分だけ大きい画像を頼む。
+                  PC … 一覧の右の枠（幅は区画の 3 割弱）。載せる前は 1.07 倍に引いてある
+                  スマートフォン … 1本目は幅いっぱい（3:2 の枠）、3本目は右の小さな枠。ほかの記事の写真は出さない（読み込まれない）
+              */
+              const cover = Math.max(1, photo.image.width / photo.image.height / 0.8);
+              const pc = Math.ceil(29 * cover * 1.07);
+              const sp = i === 0 ? 94 : Math.ceil(30 * cover);
+              const sizes = `(max-width: 1023px) ${sp}vw, min(${Math.ceil(pc * 19.2)}px, ${pc}vw)`;
               return (
                 <li key={post.slug} className="jr-item">
                   <Link href={`/blog/${post.slug}`} className="jr-link">
                     <span className="jr-photo">
-                      <Image src={photo.image} alt="" sizes="(max-width: 1023px) 94vw, 30vw" />
+                      <Image src={photo.image} alt="" sizes={sizes} />
                     </span>
                     <span className="jr-meta flex flex-wrap items-center gap-x-4 text-[0.75rem] leading-[1.8] tracking-[0.1em] text-mute">
                       <time dateTime={post.publishedAt} className="num text-[1rem]">

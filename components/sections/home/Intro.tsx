@@ -41,7 +41,8 @@ export function Intro() {
           />
         </div>
 
-        <div className="col-span-12 mt-10 md:col-span-5 md:col-start-2 md:row-start-2 md:mt-0 md:self-end lg:col-span-4 lg:col-start-3">
+        {/* タブレット（縦）では、文章の列を左の端から6列ぶん取る（5列だと、1行が15字ほどしか入らない） */}
+        <div className="col-span-12 mt-10 md:col-span-6 md:col-start-1 md:row-start-2 md:mt-0 md:self-end lg:col-span-4 lg:col-start-3">
           <div className="measure space-y-6">
             <p>
               {site.name}（{site.reading}）は、{site.address.region}

@@ -9,7 +9,6 @@
  *   01 ヒーロー → 02 はじめに → 03 店の使いかた → 04 メニュー → 05 店内 → 06 写真 → 07 ブログ → 08 店舗情報 → 09 地図
  */
 import type { Metadata } from "next";
-import { Header } from "@/components/layout/Header";
 import { Hero } from "@/components/sections/Hero";
 import { Concept } from "@/components/sections/home/Concept";
 import { Gallery } from "@/components/sections/home/Gallery";
@@ -25,10 +24,16 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata(pages.home);
 
+/*
+  1時間ごとに描き直す（アクセスがあったときに、裏で作り直される）。
+  店舗情報の「◯月の営業日を載せています」の一文と、構造化データの臨時休業は、今日の日付で内容が変わる。
+  公開（デプロイ）のたびに作り直されるが、それを待たずに日付の変わり目を反映するため。
+*/
+export const revalidate = 3600;
+
 export default function HomePage() {
   return (
     <>
-      <Header overHero />
       <main id="main">
         <Hero />
         <Intro />

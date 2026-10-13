@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Wordmark } from "@/components/ui/Wordmark";
 import { navKeys, pages, type PageKey } from "@/data/pages";
 import { closedLine, fullAddress, sundayHours, weekdayHours } from "@/data/site";
+import { HeaderShell } from "./HeaderShell";
 import { MenuDialog } from "./MenuDialog";
 import { NavLinks } from "./NavLinks";
 
@@ -15,19 +16,22 @@ const EN: Record<PageKey, string> = { home: "Top", menu: "Menu", about: "About",
  * 最初は透けていて、下へ送ると上へ隠れ、上へ戻すと、ぼかした生成りの地を敷いて出てくる
  * （状態は lib/boot-script.ts が <html> に書き、見た目は CSS が受け持つ）。
  *
- * overHero はトップページ専用。最初の画面では写真の上に白い文字で重なり、店名を出さない
- * （ヒーローに大きく出ているため）。
+ * 全ページ共通の枠（app/layout.tsx）に、1つだけ置く。ページごとに置くと、トップと下層のあいだを移るたびに
+ * ヘッダーが作り直され、開いていたスマートフォンのメニューが、閉じる動きなしに消える。
+ * トップの最初の画面だけ、写真の上に白い文字で重なり、店名を出さない（ヒーローに大きく出ているため）。
+ * その切り替えは HeaderShell が受け持つ。
  */
-export function Header({ overHero = false }: { overHero?: boolean }) {
+export function Header() {
   const nav = navKeys.map((key) => ({ key, href: pages[key].path, label: pages[key].label }));
   const all = [{ key: "home" as PageKey, href: pages.home.path, label: pages.home.label }, ...nav];
 
   return (
-    <header className="site-header" data-over-hero={overHero ? "" : undefined}>
+    <HeaderShell>
       <a href="#main" className="sr-only-focusable">
         本文へ移動
       </a>
-      <div className="flex h-full items-center justify-between gap-6 px-[var(--gutter)]">
+      {/* とても広い画面では、ほかの区画と同じ幅（--outer-max）で止めて、店名とメニューの端をそろえる */}
+      <div className="mx-auto flex h-full max-w-[var(--outer-max)] items-center justify-between gap-6 px-[var(--gutter)]">
         <Link href="/" className="hide-on-hero flex min-h-11 shrink-0 items-center">
           <span className="logo">
             <Wordmark />
@@ -68,6 +72,6 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
           </MenuDialog>
         </div>
       </div>
-    </header>
+    </HeaderShell>
   );
 }

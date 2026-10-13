@@ -147,7 +147,17 @@ export function parsePostSource(file: string, raw: string): { post?: Post; error
 
 /** 記事のファイル。dir は年のフォルダー名（content/blog の直下に置いたファイルは空文字） */
 function listPostFiles(): { dir: string; name: string }[] {
-  if (!fs.existsSync(BLOG_DIR)) return [];
+  if (!fs.existsSync(BLOG_DIR)) {
+    /*
+      公開中のサーバーで記事の置き場所が見えないのは、記事が関数に同梱されていないということ（設定の誤り）。
+      空の一覧として静かに続けると、描き直したトップページからブログの区画が消え、自動投稿は重複を見落とす。
+      エラーにして止める（ページは、前に作ったものが出つづける）。ビルド中と、手元のスクリプトでは、空として扱う。
+    */
+    if (process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
+      throw new Error(`記事の置き場所（${BLOG_DIR_REL}）が見つかりません`);
+    }
+    return [];
+  }
   const out: { dir: string; name: string }[] = [];
   for (const entry of fs.readdirSync(BLOG_DIR, { withFileTypes: true })) {
     if (entry.isDirectory() && /^\d{4}$/.test(entry.name)) {

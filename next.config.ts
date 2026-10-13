@@ -33,11 +33,13 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 365,
   },
   /**
-   * 毎日の自動投稿（/api/cron/daily-post）は、公開済みの記事を読んで重複を調べる。
-   * 記事の Markdown を、その関数にだけ同梱する。
+   * 記事の Markdown を、公開後にも読む関数に同梱する。
+   * ・毎日の自動投稿（/api/cron/daily-post）… 公開済みの記事を読んで、重複を調べる
+   * ・トップページ（/）… 1時間ごとに描き直すとき、新しい記事の一覧を読む（app/(home)/page.tsx の revalidate）
    */
   outputFileTracingIncludes: {
     "/api/cron/daily-post": ["./content/blog/**/*"],
+    "/": ["./content/blog/**/*"],
   },
   async headers() {
     return [

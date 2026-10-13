@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif } from "next/font/google";
 import { Footer } from "@/components/layout/Footer";
+import { Header } from "@/components/layout/Header";
 import { PageVeil } from "@/components/layout/PageVeil";
 import { pages } from "@/data/pages";
 import { site } from "@/data/site";
@@ -45,6 +46,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {/* 最初の描画の前に動かす（動きの準備・ヘッダーの状態）。中身は lib/boot-script.ts */}
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+        {/* ヘッダーとフッターは、ここに1つずつ置く。ページを移っても同じ要素のまま残る（開いたメニューや、移り変わりの幕が途切れない） */}
+        <Header />
         {children}
         <Footer />
         <PageVeil />

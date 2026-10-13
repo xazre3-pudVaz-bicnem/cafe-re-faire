@@ -25,6 +25,13 @@ const page = pages.menu;
 
 export const metadata: Metadata = pageMetadata(page);
 
+/*
+  1時間ごとに描き直す（アクセスがあったときに、裏で作り直される）。
+  テイクアウトの価格の言い方（オープン記念の期間が過ぎたら、通常の価格だけにする）は、今日の日付で変わる。
+  公開（デプロイ）のたびに作り直されるが、それを待たずに日付の変わり目を反映するため。
+*/
+export const revalidate = 3600;
+
 type Reveal = "up" | "left" | "right";
 
 function Price({ yen }: { yen: number }) {
@@ -66,7 +73,8 @@ function PlateFigure({
 }) {
   return (
     <figure className={`zoom ${className ?? ""}`}>
-      <Photo photo={photos[plate.photo]} ratio={ratio} sizes={sizes} className={photoClassName} reveal={reveal} parallax={parallax} />
+      {/* 端まで伸ばす写真（photoClassName に pull-l / pull-r）は、画面が広いほど大きくなる。伸ばさない写真は、器の幅で止まる */}
+      <Photo photo={photos[plate.photo]} ratio={ratio} sizes={sizes} className={photoClassName} reveal={reveal} parallax={parallax} contained={!photoClassName} />
       <figcaption className="mt-4">
         <h3 className="t-h3">{plate.label}</h3>
         <p className="mt-1 text-[0.875rem] leading-[1.9]">{plate.onPlate}</p>
@@ -92,7 +100,7 @@ function CakeFigure({
 }) {
   return (
     <figure className={`zoom ${className ?? ""}`} id={cake.id}>
-      <Photo photo={photos[cake.photo]} ratio={ratio} sizes={sizes} reveal={reveal} parallax={parallax} />
+      <Photo photo={photos[cake.photo]} ratio={ratio} sizes={sizes} reveal={reveal} parallax={parallax} contained />
       <figcaption className="mt-4">
         <h3 className="t-h3 flex flex-wrap items-baseline justify-between gap-x-4">
           <span>{cake.name}</span>
@@ -176,7 +184,7 @@ export default function MenuPage() {
             <PlateFigure plate={chicken} sizes="(max-width: 767px) 80vw, 42vw" className="w-[86%] md:col-span-6 md:col-start-2 md:w-auto" parallax={28} />
 
             <figure className="zoom ml-auto w-[62%] md:col-span-3 md:col-start-10 md:mt-28 md:w-auto">
-              <Photo photo={photos.pizza} ratio="1/1" sizes="(max-width: 767px) 58vw, 22vw" reveal="left" parallax={16} />
+              <Photo photo={photos.pizza} ratio="1/1" sizes="(max-width: 767px) 58vw, 22vw" reveal="left" parallax={16} contained />
               <figcaption className="mt-4">
                 <h3 className="t-h3">ピザ</h3>
                 <p className="mt-1 text-[0.875rem] leading-[1.9]">トマトをのせて焼いた、丸いピザ。</p>
@@ -215,7 +223,7 @@ export default function MenuPage() {
             </div>
 
             <figure className="md:col-span-5 md:col-start-8">
-              <Photo photo={photos.showcase01} ratio="1/1" sizes="(max-width: 767px) 88vw, 38vw" reveal="right" parallax={30} />
+              <Photo photo={photos.showcase01} ratio="1/1" sizes="(max-width: 767px) 88vw, 38vw" reveal="right" parallax={30} contained />
               <figcaption className="caption">ケーキのショーケース。値札は手書きです。</figcaption>
             </figure>
           </div>

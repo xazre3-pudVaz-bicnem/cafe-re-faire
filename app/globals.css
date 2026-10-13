@@ -223,6 +223,8 @@
     letter-spacing: 0.26em;
     text-transform: uppercase;
     color: var(--color-mute);
+    /* 語の途中で折り返さない（列が狭いと「IWAT / E」のように割れる） */
+    white-space: nowrap;
   }
   /* 区画の番号（01 FOOD のような）。番号だけ、扉の水色 */
   .t-label .n {
@@ -608,6 +610,15 @@
   .menu-dialog::backdrop {
     background: transparent;
   }
+  /*
+    メニューを開いているあいだは、うしろのページを動かさない。
+    中身が画面に収まっていると、メニューの上で送った分が、うしろのページに伝わる（Safari と Firefox で、閉じたら違う場所にいた）。
+    スクロールバーのあった場所は、空けたままにする（幅が変わって、うしろの中身や「Close」の位置が動かないように）。
+  */
+  html:has(.menu-dialog[open]) {
+    overflow-y: hidden;
+    scrollbar-gutter: stable;
+  }
   /* 上から幕が下りるように開き、上へ引き上げるように閉じる */
   .menu-dialog[open] {
     animation: menu-in 0.75s var(--ease-quiet) both;
@@ -681,6 +692,12 @@
     overflow: clip;
     background: #2b2825;
     color: #fff;
+    /*
+      スクロールの位置合わせ（scroll anchoring）の目印に、この区画を選ばせない。
+      中の写真は、ゆっくり大きさが変わりつづけている。Firefox はそれを目印にすると、ページの組み直しのたびに
+      （メニューを開く・閉じるなど）、写真が動いた分だけページを数 px ずらす。
+    */
+    overflow-anchor: none;
   }
   /* 写真の置き場所。読み込みが終わるまでは、写真をごく小さくしたもの（数百バイト）を引き伸ばして敷いておく */
   .hero-media {
@@ -704,7 +721,12 @@
       scale: 1;
     }
   }
-  @media (min-width: 768px) {
+  /*
+    写真の出し分けは、画面の幅ではなく、向きで決める（Hero.tsx の <source> と同じ条件）。
+    横長の画面には横位置の写真、縦長の画面（スマートフォン・縦に持ったタブレット）には縦位置の写真。
+    幅で分けると、縦に持ったタブレットに横位置の写真が出て、左右が大きく切れる。
+  */
+  @media (orientation: landscape) {
     .hero-media {
       background-image: var(--blur-pc);
     }
@@ -712,23 +734,30 @@
       object-position: var(--pos-pc, 50% 50%);
     }
   }
-  /* 文字を読めるようにするための陰。上はヘッダーの文字のため、下は店名のため */
+  /*
+    文字を読めるようにするための陰。上はヘッダーの文字のため、下は店名のため。
+    上の陰は、ヘッダーの高さを基準にする（画面の高さの割合にすると、背の高い画面で写真の奥まで暗くなり、
+    背の低い画面ではメニューの文字のうしろが足りなくなる）。
+  */
   .hero-shade {
     position: absolute;
     inset: 0;
     z-index: 1;
     background:
-      linear-gradient(to bottom, rgb(24 21 18 / 0.46) 0%, rgb(24 21 18 / 0) 24%),
+      linear-gradient(to bottom, rgb(24 21 18 / 0.66) 0, rgb(24 21 18 / 0.52) var(--header-h), rgb(24 21 18 / 0) calc(var(--header-h) * 3)),
       linear-gradient(to top, rgb(24 21 18 / 0.74) 0%, rgb(24 21 18 / 0.4) 28%, rgb(24 21 18 / 0) 60%);
     pointer-events: none;
   }
+  /* 文字の置き場所。とても広い画面では、ほかの区画と同じ幅（--outer-max）で止めて、端をそろえる */
   .hero-body {
     position: relative;
     z-index: 2;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    max-width: var(--outer-max);
     height: 100%;
+    margin-inline: auto;
     padding: 0 var(--gutter) calc(1.75rem + env(safe-area-inset-bottom, 0px));
   }
   /* 店名。画面の端まで使って、大きく2行に組む（1行目は立体、2行目は斜体を1字ぶん下げる） */
@@ -775,6 +804,22 @@
     font-size: 0.9375rem;
     line-height: 2;
     letter-spacing: 0.2em;
+  }
+  /* スマートフォンでは、右下の細い線（SCROLL）の下に文字がもぐらないように、右を少し空ける（文字を大きくして読む人のため） */
+  @media (max-width: 767px) {
+    .hero-place,
+    .hero-message {
+      max-width: calc(100% - 1.5rem);
+    }
+  }
+  /*
+    小さな文字のまわりに、ごく淡い陰を敷く。画面の形によっては、文字が写真の明るいところ（いちごの断面など）に掛かる。
+    写真を差し替えたときにも、読めなくならないように。
+  */
+  .hero-place,
+  .hero-message,
+  .hero-scroll > span {
+    text-shadow: 0 0 1.4em rgb(20 16 12 / 0.45);
   }
   /* 幅の狭いスマートフォンでは、1行に収まるように字間を少し詰める */
   @media (max-width: 359px) {
@@ -836,8 +881,14 @@
     .hero-body {
       padding-bottom: 2.5rem;
     }
+    /*
+      店名の大きさは、幅（14.4vw）と高さ（27svh）の小さいほう。
+      3つ目は、背の低い画面のため。店名の下に置くもの（添え書き・余白）の高さは画面が低くても変わらないので、
+      店名だけを高さの割合で決めると、低い画面ほど店名が上へせり上がり、写真の明るいところ（クリーム）に掛かって読みにくくなる。
+      店名の上端が、どの画面でも「高さの半分より少し上」までで止まるようにする。
+    */
     .hero-lockup {
-      font-size: min(14.4vw, 27svh);
+      font-size: min(14.4vw, 27svh, calc(32.4svh - 3.4rem));
       line-height: 0.84;
     }
     .hero-place {
@@ -861,10 +912,26 @@
       height: 4.5rem;
     }
   }
-  /* 背の低い画面（横向きのスマートフォンなど）では、最小の高さを外して1画面に収める */
+  /*
+    背の低い画面（横向きのスマートフォンなど）。最小の高さを外して1画面に収め、店名は1行に組む。
+    2行のままだと、1行目が写真の上半分（明るいクリーム）に掛かって読めなくなる。
+  */
   @media (max-height: 540px) and (orientation: landscape) {
     .hero {
       min-height: 0;
+    }
+    .hero-lockup {
+      font-size: min(13vw, 24svh);
+      white-space: nowrap;
+    }
+    .hero-lockup .line {
+      display: inline-block;
+    }
+    .hero-l2 {
+      padding-left: 0;
+    }
+    .hero-place {
+      margin-top: 1.1rem;
     }
     .hero-scroll > i {
       height: 2.25rem;
@@ -954,11 +1021,12 @@
       opening-mark-in 0.75s var(--ease-quiet) 0.1s backwards,
       opening-mark-out 0.35s ease-in 0.8s forwards;
   }
+  /* 文字は、店名（data/site.ts）から Hero.tsx が data-a・data-b に入れる。ここには書かない */
   .opening-mark::before {
-    content: "Cafe";
+    content: attr(data-a);
   }
   .opening-mark::after {
-    content: "Re faire";
+    content: attr(data-b);
     font-style: italic;
   }
   @keyframes opening-mark-in {
@@ -1008,16 +1076,23 @@
       object-position: var(--pos, 50% 50%);
     }
   }
-  /* 視差の箱は、動く分だけ上下に大きくしておく（動いても枠の端が見えない） */
-  .photo-px {
-    position: absolute;
-    inset: calc(var(--px, 0px) * -1) 0;
+  /*
+    視差の箱は、動く分だけ上下に大きくしておく（動いても枠の端が見えない）。
+    動く量は --px × --px-k。箱の大きさと、動かす量（下の px-shift）の両方を、同じ式から出す
+    （片方だけを変えると、動いた先で枠の端にすき間が出る）。
+  */
+  .photo {
+    --px-k: 1;
   }
   @media (max-width: 767px) {
-    .photo-px {
+    .photo {
       /* スマートフォンでは、動きを6割に抑える */
-      inset: calc(var(--px, 0px) * -0.6) 0;
+      --px-k: 0.6;
     }
+  }
+  .photo-px {
+    position: absolute;
+    inset: calc(var(--px, 0px) * var(--px-k) * -1) 0;
   }
 
   /* 写真以外の枠（記事一覧の小さな写真・地図） */
@@ -1150,11 +1225,33 @@
   .hs-progress {
     display: none;
   }
+  /* タブレット（縦）：スマートフォンと同じく1枚ずつ。小さな写真が小さくなりすぎない幅にする */
   @media (min-width: 768px) {
     .hstrip-track {
       column-gap: 2rem;
-      row-gap: 6rem;
+      row-gap: 5rem;
       margin-top: 3rem;
+    }
+    .hs-title {
+      grid-column: 1 / 9;
+    }
+    .hs-2 {
+      grid-column: 6 / -1;
+    }
+    .hs-3 {
+      grid-column: 1 / 11;
+    }
+    .hs-4 {
+      grid-column: 3 / 9;
+    }
+    .hs-foot {
+      margin-top: 4.5rem;
+    }
+  }
+  /* PC で縦に組むとき（スクロール連動のアニメーションが使えないブラウザ・動きを減らす設定・縦長の画面） */
+  @media (min-width: 1024px) {
+    .hstrip-track {
+      row-gap: 6rem;
       align-items: start;
     }
     .hs-title {
@@ -1173,9 +1270,6 @@
     .hs-4 {
       grid-column: 2 / 5;
       margin-top: -14rem;
-    }
-    .hs-foot {
-      margin-top: 4.5rem;
     }
   }
 
@@ -1200,13 +1294,13 @@
   .ghost::before {
     content: attr(data-text);
   }
-  /* スマートフォンでは、下の小さな写真2枚のうしろに置く（文章のうしろには置かない） */
+  /* スマートフォンとタブレット（縦）では、下の小さな写真2枚のうしろに置く（文章のうしろには置かない） */
   .space-ghost {
     bottom: 9rem;
     right: -0.06em;
-    font-size: 10rem;
+    font-size: clamp(10rem, 30vw, 16rem);
   }
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .space-ghost {
       top: 36%;
       bottom: auto;
@@ -1367,12 +1461,13 @@
     color: var(--color-ink);
     font-variant-numeric: lining-nums;
   }
+  /* 時刻のあいだの線。背景ではなく罫で引く（背景は、印刷や、色を強制する表示設定では出ない） */
   .hours-dash {
     display: block;
     flex: none;
     width: 0.5em;
-    height: 1px;
-    background: currentColor;
+    height: 0;
+    border-top: 1px solid currentColor;
     opacity: 0.55;
   }
   .hours-note {
@@ -1407,6 +1502,14 @@
     color: #cfc9be;
     overflow: hidden;
     overflow: clip;
+  }
+  /*
+    中身の置き場所。地の色は画面の端まで敷き、中身は、ほかの区画と同じ幅（--outer-max）で止める。
+    店名の大きさ（下の .footer-mark）は、この箱の幅（100cqw）から決める。
+  */
+  .footer-in {
+    max-width: var(--outer-max);
+    margin-inline: auto;
     container-type: inline-size;
   }
   .site-footer a {
@@ -1592,6 +1695,9 @@
     border-top: 1px solid var(--color-line);
     text-align: left;
     vertical-align: top;
+    /* 狭い列で、最後の行に1字だけ残らないように、行の長さをそろえる。対応するブラウザでは、文節の切れ目で折り返す */
+    text-wrap: balance;
+    word-break: auto-phrase;
   }
   .prose tr:last-child td {
     border-bottom: 1px solid var(--color-line);
@@ -1790,9 +1896,14 @@
      ====================================================================== */
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
-      /* 視差：写真が、枠の中で数十px だけ遅れて動く */
+      /*
+        視差：写真が、枠の中で数十px だけ遅れて動く。
+        view-timeline-inset は 0 にしておく。既定（auto）だと、html の scroll-padding-top（固定ヘッダーの分）が
+        「画面の上端」の代わりに使われ、動きの始まりと終わりがその分だけずれる。
+      */
       .photo[data-px] {
         view-timeline: --ph block;
+        view-timeline-inset: 0px;
       }
       .photo-px {
         animation: px-shift linear;
@@ -1801,10 +1912,10 @@
       }
       @keyframes px-shift {
         from {
-          translate: 0 calc(var(--px, 0px) * -1);
+          translate: 0 calc(var(--px, 0px) * var(--px-k) * -1);
         }
         to {
-          translate: 0 var(--px, 0px);
+          translate: 0 calc(var(--px, 0px) * var(--px-k));
         }
       }
       /* 最初の画面の写真は、送られていくあいだ、少し遅れてついてくる */
@@ -1822,6 +1933,8 @@
       .ghost {
         animation: ghost-drift linear;
         animation-timeline: view();
+        /* 上と同じ理由で、画面の上端をそのまま基準にする（書き方が通らないブラウザでは、1行上のままになる） */
+        animation-timeline: view(block 0px);
         animation-range: cover 0% cover 100%;
       }
       @keyframes ghost-drift {
@@ -1841,23 +1954,35 @@
       列の幅は、写真の大きさの係数（--k1〜--k4）から計算している。写真の幅も同じ係数から出すので、ずれない。
       中にリンクは置かない（画面の外にあるリンクに、キーボードで移れてしまうため）。リンクは、下の帯に置く。
     */
-    @media (min-width: 1024px) and (min-height: 640px) and (prefers-reduced-motion: no-preference) {
+    /*
+      横長の画面だけ（min-aspect-ratio）。縦長の画面（縦に持った大きなタブレット・縦置きのモニター）では、
+      写真の大きさを画面の高さから決めると幅に収まらないので、縦に組む。
+    */
+    @media (min-width: 1024px) and (min-height: 640px) and (min-aspect-ratio: 1/1) and (prefers-reduced-motion: no-preference) {
       /* とても広い画面でも、列が画面の端から端まで流れるように、この区画だけ最大幅を外す */
       .section:has(> .hstrip) {
         max-width: none;
       }
       .hstrip {
-        --u: min(60svh, 44rem);
+        /* 写真の大きさの単位。画面の高さから決めるが、幅の半分弱までで止める（正方形に近い画面で、1枚が画面からはみ出さないように） */
+        --u: min(60svh, 44rem, 48cqw);
         --g: clamp(3rem, 6cqw, 7.5rem);
         --tw: clamp(20rem, 27cqw, 28rem);
         --k1: 1.5;
         --k2: 0.62;
         --k3: 0.92;
         --k4: 0.74;
-        --track: calc(var(--gutter) * 3 + var(--tw) + var(--g) * 4 + (var(--k1) + var(--k2) + var(--k3) + var(--k4)) * var(--u));
+        /* 左右の余白。とても広い画面では、ほかの区画（--outer-max で止まる）と、文字の左端・右端をそろえる */
+        --side: max(var(--gutter), calc((100cqw - var(--outer-max)) / 2 + var(--gutter)));
+        --track: calc(var(--side) * 2 + var(--gutter) + var(--tw) + var(--g) * 4 + (var(--k1) + var(--k2) + var(--k3) + var(--k4)) * var(--u));
         --travel: max(0px, calc(var(--track) - 100cqw));
         height: calc(100svh + var(--travel));
         view-timeline: --hs block;
+        /*
+          既定（auto）のままだと、html の scroll-padding-top（固定ヘッダーの分・96px）が「画面の上端」の代わりに使われ、
+          区画が貼りつく 96px 手前から列が流れはじめる。貼りついた瞬間には、見出しがもう左へ切れている（実際に起きた）。
+        */
+        view-timeline-inset: 0px;
       }
       .hstrip-pin {
         position: sticky;
@@ -1873,7 +1998,7 @@
         overflow: clip;
       }
       .hs-idx {
-        padding-inline: var(--gutter);
+        padding-inline: var(--side);
       }
       .hstrip-track {
         display: flex;
@@ -1881,10 +2006,11 @@
         gap: var(--g);
         width: max-content;
         margin-top: 0;
-        padding-inline: var(--gutter) calc(var(--gutter) * 2);
+        padding-inline: var(--side) calc(var(--side) + var(--gutter));
         animation: hs-move linear both;
         animation-timeline: --hs;
-        animation-range: contain 0% contain 100%;
+        /* 貼りついた直後と、離れる直前に、少しだけ止まる間を置く（見出しと最後の1枚を、止まった状態で見せる） */
+        animation-range: contain 4% contain 96%;
       }
       @keyframes hs-move {
         to {
@@ -1931,7 +2057,7 @@
         justify-content: space-between;
         gap: 3rem;
         margin-top: 0;
-        padding-inline: var(--gutter);
+        padding-inline: var(--side);
       }
       /* いま、列のどのあたりにいるか（細い線） */
       .hs-progress {
@@ -1949,7 +2075,7 @@
         transform-origin: left center;
         animation: hs-progress linear both;
         animation-timeline: --hs;
-        animation-range: contain 0% contain 100%;
+        animation-range: contain 4% contain 96%;
       }
       @keyframes hs-progress {
         from {
@@ -1991,6 +2117,71 @@
     .veil {
       display: none;
     }
+    /* 紙に要らないもの（メニュー・地図の枠・飾りの線）。地図は紙に出ないので、空白の箱を残さない */
+    .site-header nav,
+    .menu-btn,
+    .hero-scroll,
+    .hs-progress,
+    .map-frame {
+      display: none !important;
+    }
+    /*
+      背景は、既定では印刷されない。背景で引いている罫・短い線・矢印は、紙にも出す
+      （出ないと、営業時間の表やリンクの区切りが分からなくなる）。
+    */
+    .rows > *::before,
+    .rows > *::after,
+    .facts > div::before,
+    .facts > div::after,
+    .jr-item::before,
+    .jr-item::after,
+    .t-kicker::before,
+    .hero-place::before,
+    .prose h2::before,
+    .prose ul > li::before,
+    .more::after {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    /* フッターは、黒い地を敷かずに、墨の文字で刷る（地が印刷されないと、明るい色の文字が紙に溶ける） */
+    .site-footer {
+      background: none;
+      color: var(--color-ink-2);
+    }
+    /* 店名は、紙では小さく（幅いっぱいのままだと、それだけで紙を1枚使う） */
+    .site-footer a.footer-mark {
+      color: var(--color-ink);
+      font-size: 2.75rem;
+    }
+    .site-footer .t-label {
+      color: var(--color-door-deep);
+    }
+  }
+
+  /*
+    色を強制する表示設定（Windows のハイコントラストなど）。
+    背景で引いている罫・短い線・矢印は、そのままだと消えるので、文字の色で出す。
+  */
+  @media (forced-colors: active) {
+    .rows > *::before,
+    .rows > *::after,
+    .facts > div::before,
+    .facts > div::after,
+    .jr-item::before,
+    .jr-item::after,
+    .t-kicker::before,
+    .hero-place::before,
+    .prose h2::before,
+    .prose ul > li::before,
+    .hs-progress > i {
+      forced-color-adjust: none;
+      background: CanvasText;
+    }
+    .more::after,
+    .ul::after {
+      forced-color-adjust: none;
+      background: LinkText;
+    }
   }
 
   /*
@@ -2021,7 +2212,8 @@
     .veil {
       display: none !important;
     }
-    html[data-hide] .site-header {
+    /* ヘッダーは隠さず、出したままにする（動きを止めると、ぱっと消えて、ぱっと出ることになるため）。上の決まりと同じ強さで書く */
+    html[data-hide] .site-header:not(:focus-within) {
       transform: none;
     }
   }

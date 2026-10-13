@@ -1,11 +1,4 @@
-import { Header } from "@/components/layout/Header";
-
-/** 下層ページの共通の枠（ヘッダーは、最初から地の色で出す） */
+/** 下層ページの共通の枠。ヘッダーとフッターは、全ページ共通の枠（app/layout.tsx）にある */
 export default function PagesLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Header />
-      <main id="main">{children}</main>
-    </>
-  );
+  return <main id="main">{children}</main>;
 }

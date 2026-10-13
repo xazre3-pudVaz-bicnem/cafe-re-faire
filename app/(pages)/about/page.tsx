@@ -93,10 +93,10 @@ export default function AboutPage() {
 
             <div className="grid grid-cols-12 items-start gap-x-4 md:col-span-6 md:col-start-7 md:gap-x-8">
               <div className="col-span-7">
-                <Photo photo={photos.entranceSign} ratio="3/4" position="50% 30%" parallax={24} sizes="(max-width: 767px) 54vw, 28vw" />
+                <Photo photo={photos.entranceSign} ratio="3/4" position="50% 30%" parallax={24} sizes="(max-width: 767px) 54vw, 28vw" contained />
               </div>
               <div className="col-span-5 mt-20 md:mt-36">
-                <Photo photo={photos.oliveTree} ratio="3/4" reveal="right" delay={0.12} parallax={44} sizes="(max-width: 767px) 38vw, 20vw" />
+                <Photo photo={photos.oliveTree} ratio="3/4" reveal="right" delay={0.12} parallax={44} sizes="(max-width: 767px) 38vw, 20vw" contained />
               </div>
             </div>
           </div>
@@ -148,10 +148,10 @@ export default function AboutPage() {
 
           <div className="mt-6 grid grid-cols-12 items-start gap-x-4 md:mt-10 md:gap-x-8">
             <div className="col-span-5 md:col-span-3 md:col-start-2">
-              <Photo photo={photos.wallArt} ratio="3/4" position="40% 30%" parallax={18} sizes="(max-width: 767px) 38vw, 22vw" />
+              <Photo photo={photos.wallArt} ratio="3/4" position="40% 30%" parallax={18} sizes="(max-width: 767px) 38vw, 22vw" contained />
             </div>
             <div className="col-span-7 mt-16 md:col-span-7 md:col-start-6 md:mt-32">
-              <Photo photo={photos.interior01} ratio="3/2" reveal="left" delay={0.12} parallax={36} sizes="(max-width: 767px) 54vw, 52vw" />
+              <Photo photo={photos.interior01} ratio="3/2" reveal="left" delay={0.12} parallax={36} sizes="(max-width: 767px) 54vw, 52vw" contained />
             </div>
           </div>
         </div>
