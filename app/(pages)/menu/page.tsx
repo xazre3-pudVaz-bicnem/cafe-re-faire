@@ -125,11 +125,11 @@ export default function MenuPage() {
       <PageHead
         crumbs={crumbsFor(page)}
         label="Menu"
-        title={["プレートランチと、", "ケーキのメニュー"]}
+        title={["曜日プレートと、", "ケーキのメニュー"]}
         lead={
           <>
-            {site.address.area}のカフェ {site.name}のメニューです。昼は、曜日ごとに内容の替わるプレート。ショーケースには、ケーキが{cakes.length}
-            種類。テイクアウトの弁当もあります。
+            {site.address.area}のカフェ {site.name}のメニューです。昼は、曜日ごとに内容の替わる曜日プレート。ショーケースには、ケーキが{cakes.length}
+            種類。テイクアウト販売もしています。
           </>
         }
       />
@@ -311,7 +311,7 @@ export default function MenuPage() {
               <h2 className="t-h2">テイクアウト</h2>
               <div className="mt-6 space-y-5 md:mt-8">
                 <p>
-                  弁当は{site.takeout.kinds}種類。{takeoutPriceText()}です。
+                  テイクアウト販売もしています。弁当は{takeoutPriceText()}です。
                 </p>
                 <p>
                   {site.takeout.preorderBy.join("か")}で先に注文しておくと、受け取りがスムーズです。

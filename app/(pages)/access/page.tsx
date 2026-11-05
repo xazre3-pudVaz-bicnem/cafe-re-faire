@@ -175,7 +175,7 @@ export default function AccessPage() {
         <div className="wrap">
           <Onward
             links={[
-              { href: pages.menu.path, label: "プレートランチとケーキのメニュー", note: `曜日プレート、ケーキ${cakes.length}種、テイクアウト。` },
+              { href: pages.menu.path, label: pages.menu.anchor, note: `曜日プレート、ケーキ${cakes.length}種、テイクアウト。` },
               { href: pages.about.path, label: `${site.name}の店内と外観`, note: "水色の扉、木の柱、店名の読み方。" },
               { href: "/blog/category/mizusawa", label: "水沢・奥州のことを書いたブログ", note: "駅のこと、地名のこと。" },
             ]}

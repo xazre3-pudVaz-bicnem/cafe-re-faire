@@ -38,7 +38,7 @@ export function Footer() {
                 <span className="mx-[0.5em] opacity-40" aria-hidden="true">
                   /
                 </span>
-                日曜・祝日 {sundayHours}
+                日曜 {sundayHours}
               </p>
               <p>定休日 {closedLine}</p>
             </div>

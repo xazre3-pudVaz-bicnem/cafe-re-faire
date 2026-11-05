@@ -41,7 +41,7 @@ export function ShopFacts({ withAccessLinks = false }: { withAccessLinks?: boole
         <dd>
           <p>{weekdayHours}</p>
           <p>
-            日曜・祝日は {sundayHours}
+            日曜は {sundayHours}
           </p>
         </dd>
       </div>

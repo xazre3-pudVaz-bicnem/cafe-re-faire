@@ -39,7 +39,7 @@ export type PageDef = {
 
 const { name, reading } = site;
 const { region, locality, area, district } = site.address;
-const { weekday, sundayHoliday, closedDay } = site.hours;
+const { weekday, sunday, closedDay } = site.hours;
 const opens = jaTime(weekday.opens);
 const parking = `${site.parking.where}に駐車場${site.parking.spaces}台`;
 const station = site.access.routes[0];
@@ -63,12 +63,12 @@ export const pages: Record<PageKey, PageDef> = {
     path: "/menu",
     label: "メニュー",
     title: `メニュー｜${area}でランチとケーキ、テイクアウト｜${name}`,
-    description: `${locality}${area}のカフェ ${name}のメニュー。曜日ごとに替わるランチプレート、ショーケースに並ぶ${cakes.length}種のケーキ（各${cakePrice}円）、${site.takeout.kinds}種のテイクアウト弁当を写真で紹介します。ケーキだけ、飲みものだけの利用もできます。`,
+    description: `${locality}${area}のカフェ ${name}のメニュー。曜日ごとに内容の替わる曜日プレートと、ショーケースに並ぶ${cakes.length}種のケーキ（各${cakePrice}円）を写真で紹介します。テイクアウト販売もしています。ケーキだけ、飲みものだけの利用もできます。`,
     primaryKeyword: "水沢 ランチ カフェ",
     secondaryKeywords: ["水沢 ケーキ", "水沢 スイーツ", "水沢 テイクアウト", "奥州市 ランチ"],
     role: "何が食べられるか・いくらか。確かめられたメニューだけを載せる",
     ogPhoto: "cakeSweetPotato",
-    anchor: "プレートランチとケーキのメニュー",
+    anchor: "曜日プレートとケーキのメニュー",
     anchorNote: `曜日プレート、ケーキ${cakes.length}種、テイクアウト。`,
   },
   about: {
@@ -89,7 +89,7 @@ export const pages: Record<PageKey, PageDef> = {
     path: "/access",
     label: "アクセス",
     title: `アクセス・営業時間・駐車場｜${area}のカフェ ${name}`,
-    description: `${name}は${locality}${district}、${site.access.road}のカフェです。${area}駅から${station.car}、${parking}。営業は${opens}〜${jaTime(weekday.closes)}（日曜・祝日は${jaTime(sundayHoliday.closes)}まで）、${closedDay}定休。地図と行き方、支払い方法を案内します。`,
+    description: `${name}は${locality}${district}、${site.access.road}のカフェです。${area}駅から${station.car}、${parking}。営業は${opens}〜${jaTime(weekday.closes)}（日曜は${jaTime(sunday.closes)}まで）、${closedDay}定休。地図と行き方、支払い方法を案内します。`,
     primaryKeyword: "水沢 カフェ 駐車場",
     secondaryKeywords: ["水沢駅 カフェ", "Cafe Re faire 営業時間", "Cafe Re faire 場所", "奥州市 カフェ 駐車場"],
     role: "行き方・営業時間・駐車場・支払い・予約。来店の前に知りたいことに答える（よくある質問もここ）",

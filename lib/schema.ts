@@ -47,7 +47,7 @@ function postalAddress(): Node {
 }
 
 function openingHours(): Node[] {
-  const { weekday, sundayHoliday } = site.hours;
+  const { weekday, sunday } = site.hours;
   return [
     {
       "@type": "OpeningHoursSpecification",
@@ -58,9 +58,10 @@ function openingHours(): Node[] {
     },
     {
       "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Sunday", "PublicHolidays"],
-      opens: sundayHoliday.opens,
-      closes: sundayHoliday.closes,
+      // 19時まで開くのは日曜だけ。祝日の営業時間は確かめられていないので、入れない
+      dayOfWeek: ["Sunday"],
+      opens: sunday.opens,
+      closes: sunday.closes,
     },
   ];
 }
@@ -121,7 +122,7 @@ export function cafeNode(): Node {
     ],
     openingHoursSpecification: openingHours(),
     ...(special.length ? { specialOpeningHoursSpecification: special } : {}),
-    servesCuisine: ["カフェ", "ランチプレート", "ケーキ"],
+    servesCuisine: ["カフェ", "ケーキ"],
     hasMenu: absoluteUrl(pages.menu.path),
     currenciesAccepted: "JPY",
     paymentAccepted: site.payment.join(", "),
@@ -198,7 +199,7 @@ export function menuNode(): Node {
       {
         "@type": "MenuSection",
         name: "曜日プレート",
-        description: "曜日ごとに内容が替わるランチプレート。",
+        description: "曜日ごとに内容が替わるプレート。",
         hasMenuItem: plates.map((p) => ({
           "@type": "MenuItem",
           name: `${p.label}のプレート`,
@@ -220,7 +221,7 @@ export function menuNode(): Node {
       {
         "@type": "MenuSection",
         name: "テイクアウト",
-        description: `弁当${site.takeout.kinds}種。${takeoutPriceText()}。`,
+        description: `テイクアウト販売もしています。弁当は${takeoutPriceText()}。`,
       },
     ],
   };

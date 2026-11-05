@@ -50,12 +50,16 @@ export const site = {
   /** 電話 [GMAP][TABE]（2つの情報源で一致）。載せないときは null にする */
   phone: { display: "070-2010-6803", e164: "+81-70-2010-6803" } as { display: string; e164: string } | null,
 
-  /** 営業時間 [IG プロフィール]。店から届いた10月の営業カレンダーとも一致 [PHOTO] */
+  /**
+   * 営業時間 [IG プロフィール]。店から届いた10月の営業カレンダーとも一致 [PHOTO]
+   * 19時まで開くのは日曜だけ（祝日は含まない）[2026-11-04 店から（LINE）「日曜日のみ19時まで」]。
+   * 祝日の営業時間は、確かめられていないので書かない。
+   */
   hours: {
     /** 月・火・木・金・土 */
     weekday: { opens: "09:00", closes: "15:00", lastOrder: "14:30" },
-    /** 日曜と祝日 */
-    sundayHoliday: { opens: "09:00", closes: "19:00", lastOrder: "18:30" },
+    /** 日曜 */
+    sunday: { opens: "09:00", closes: "19:00", lastOrder: "18:30" },
     /** 定休日 */
     closedDay: "水曜",
     /** 不定休があるか */
@@ -76,6 +80,7 @@ export const site = {
    *   プロフィール「テイクアウト可」
    *   2026-09-24 の投稿「10月いっぱいまでオープン記念価格／11月からは650円税込／DMまたは電話で事前注文」
    *   10月の営業日の投稿「当店の弁当3種」
+   * 画面では「テイクアウト販売もしています」と書く（弁当の種類の数は書かない）[2026-11-04 店から（LINE）]
    */
   takeout: {
     kinds: 3,
@@ -209,7 +214,7 @@ const h = site.hours;
 /** 9:00〜15:00（L.O. 14:30） */
 export const weekdayHours = `${hm(h.weekday.opens)}〜${hm(h.weekday.closes)}（L.O. ${hm(h.weekday.lastOrder)}）`;
 /** 9:00〜19:00（L.O. 18:30） */
-export const sundayHours = `${hm(h.sundayHoliday.opens)}〜${hm(h.sundayHoliday.closes)}（L.O. ${hm(h.sundayHoliday.lastOrder)}）`;
+export const sundayHours = `${hm(h.sunday.opens)}〜${hm(h.sunday.closes)}（L.O. ${hm(h.sunday.lastOrder)}）`;
 /** 水曜（ほかに不定休あり） */
 export const closedLine = `${h.closedDay}${h.irregular ? "（ほかに不定休あり）" : ""}`;
 /** 店舗前に5台 */

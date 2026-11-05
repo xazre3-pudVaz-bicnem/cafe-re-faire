@@ -11,7 +11,7 @@ relatedPages: ["/menu", "/access", "/about"]
 author: "editor"
 ---
 
-Cafe Re faireでは、弁当のテイクアウトを行っています。価格についてお知らせします。
+Cafe Re faireでは、テイクアウト販売もしています。弁当の価格についてお知らせします。
 
 ## 価格
 

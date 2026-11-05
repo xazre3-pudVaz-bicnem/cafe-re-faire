@@ -16,7 +16,7 @@ export function buildFaqs(): Faq[] {
     },
     {
       q: "何時から開いていますか。",
-      a: `朝${jaTime(site.hours.weekday.opens)}に開きます。営業時間は${weekdayHours}、日曜と祝日は${sundayHours}です。`,
+      a: `朝${jaTime(site.hours.weekday.opens)}に開きます。営業時間は${weekdayHours}、日曜は${sundayHours}です。`,
     },
     {
       q: "定休日はいつですか。",
@@ -32,7 +32,7 @@ export function buildFaqs(): Faq[] {
     },
     {
       q: "テイクアウトはできますか。",
-      a: `できます。弁当は${site.takeout.kinds}種類で、${takeoutPriceText()}です。${site.takeout.preorderBy.join("か")}で先に注文しておくと、受け取りがスムーズです。`,
+      a: `できます。テイクアウト販売もしていて、弁当は${takeoutPriceText()}です。${site.takeout.preorderBy.join("か")}で先に注文しておくと、受け取りがスムーズです。`,
     },
     {
       q: "支払いに使えるものは何ですか。",

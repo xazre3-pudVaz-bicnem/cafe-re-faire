@@ -19,9 +19,9 @@ import { site } from "@/data/site";
  */
 export function Hero() {
   const [head, ...rest] = site.name.split(" ");
-  // 横長の画面に出す写真（pc）と、縦長の画面に出す写真（sp）
+  // 横長の画面に出す写真（pc）と、縦長の画面に出す写真（sp）。sp は店の希望でスイートポテトチーズケーキ（2026-11-04）
   const pc = photos.cakeMatcha.image;
-  const sp = photos.cakeTiramisu.image;
+  const sp = photos.cakeSweetPotato.image;
   // 画面の向きで別の写真を出すので、どちらにも当てはまる説明にする
   const alt = `黒い石のプレートにのせた、${site.name}のケーキ`;
 
@@ -32,7 +32,7 @@ export function Hero() {
   /*
     縦長の画面では、画面を写真の高さで埋めるので、写真は画面の幅より広く描かれる（左右が切れる）。
     実際に描かれる幅は画面の幅のおよそ 1.6 倍だが、sizes は 100vw にしてある。
-    ・画素の細かい端末（iPhone など、3倍）… 100vw でも元の写真（幅 1,087px）がそのまま届く
+    ・画素の細かい端末（iPhone など、3倍）… 100vw でも元の写真（幅 1,086px）がそのまま届く
     ・画素の粗い端末（2倍以下）… 幅 750〜828px の軽い画像が届く。回線も遅いことが多いので、表示の速さを優先する
     1.6 倍に合わせると、粗い端末にも元の写真が届いて、最初の表示が 0.2〜0.3 秒遅くなる。
   */
@@ -50,7 +50,7 @@ export function Hero() {
     "--blur-sp": `url("${sp.blurDataURL}")`,
     // 切り抜きの位置（写真ごとに決めている）
     "--pos-pc": "50% 62%",
-    "--pos-sp": "58% 50%",
+    "--pos-sp": "55% 50%",
   } as CSSProperties;
 
   return (

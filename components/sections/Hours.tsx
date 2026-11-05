@@ -5,12 +5,12 @@ import { closedLine, hm, site } from "@/data/site";
  * 値はすべて data/site.ts から出す。曜日の名前も、定休日から計算する（ここに直接書かない）。
  */
 export function Hours() {
-  const { weekday, sundayHoliday, closedDay } = site.hours;
-  // 定休日と日曜を除いた曜日（日曜と祝日は、別の時間）
+  const { weekday, sunday, closedDay } = site.hours;
+  // 定休日と日曜を除いた曜日（日曜は、別の時間）
   const weekdays = ["月", "火", "水", "木", "金", "土"].filter((d) => !closedDay.startsWith(d)).join("・");
   const rows = [
     { label: weekdays, ...weekday },
-    { label: "日曜・祝日", ...sundayHoliday },
+    { label: "日曜", ...sunday },
   ];
 
   return (

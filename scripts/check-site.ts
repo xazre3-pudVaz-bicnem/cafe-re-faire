@@ -15,7 +15,7 @@
  *   ・構造化データ（JSON-LD）が読める／ページごとに決めた種類が入っている／店の住所・電話が data/site.ts と同じ
  *   ・内部リンクが切れていない／どこからもリンクされていないページが無い
  *   ・トップの最初の画面に、リンクやボタンが無い
- *   ・robots.txt・sitemap.xml・manifest・RSS・自動投稿の入口（鍵が無ければ 401）
+ *   ・robots.txt・sitemap.xml・manifest・RSS・存在しないページが 404
  */
 import { pageList, pages } from "../data/pages";
 import { addressLine, site } from "../data/site";
@@ -291,13 +291,20 @@ async function main() {
   if (failures === before5) console.log(`  ✓ リンク・ボタンなし／写真は最優先で読み込み／文字は「${heroText}」`);
 
   // ---- 6. そのほかのファイル -------------------------------------------------
-  console.log("6. robots・sitemap・manifest・RSS・自動投稿の入口");
+  console.log("6. robots・sitemap・manifest・RSS");
   const before6 = failures;
+  // 巡回は、公開 URL の有無に関係なく止めない（止めると noindex が読まれない）。公開 URL が無い間は、sitemap の行を出さない
+  if (!/Allow: \//.test(robotsTxt)) ng("/robots.txt", "Allow / が無い");
+  if (/Disallow: \/\s*$/m.test(robotsTxt)) ng("/robots.txt", "全体を拒否している（noindex が読まれなくなる）");
   if (siteUrl) {
-    if (!/Allow: \//.test(robotsTxt) || !/Disallow: \/api\//.test(robotsTxt)) ng("/robots.txt", "Allow / と Disallow /api/ が無い");
     for (const p of pageList) if (!sitemapPaths.includes(p.path)) ng("/sitemap.xml", `${p.path} が載っていない`);
     if (sitemapXml.includes("localhost")) ng("/sitemap.xml", "localhost の URL が入っている");
-  } else if (!/Disallow: \/\s*$/m.test(robotsTxt)) ng("/robots.txt", "公開 URL が無いのに、全体を拒否していない");
+    // 本番そのものを点検しているとき：配信しているドメインと、公開 URL のドメインが同じであること（定数の書き違いに気づくため）
+    const host = new URL(BASE).hostname;
+    if (host !== "localhost" && host !== "127.0.0.1" && host !== new URL(siteUrl).hostname) {
+      ng("/robots.txt", `配信しているドメイン（${host}）と、公開 URL（${siteUrl}）が違う`);
+    }
+  }
 
   const manifest = await fetch(`${BASE}/manifest.webmanifest`);
   if (manifest.status !== 200) ng("/manifest.webmanifest", `状態 ${manifest.status}`);
@@ -320,14 +327,9 @@ async function main() {
     if ((await fetch(local, { method: "HEAD" })).status !== 200) ng(url, "OGP の画像が読めません");
   }
 
-  const cron = await fetch(`${BASE}/api/cron/daily-post`);
-  if (cron.status !== 401) ng("/api/cron/daily-post", `鍵なしの呼び出しが 401 にならない（${cron.status}）`);
-  const cronBad = await fetch(`${BASE}/api/cron/daily-post`, { headers: { Authorization: "Bearer wrong" } });
-  if (cronBad.status !== 401) ng("/api/cron/daily-post", `違う鍵の呼び出しが 401 にならない（${cronBad.status}）`);
-
   const notFound = await fetch(`${BASE}/no-such-page`);
   if (notFound.status !== 404) ng("/no-such-page", `存在しないページが 404 にならない（${notFound.status}）`);
-  if (failures === before6) console.log(`  ✓ robots・sitemap・manifest・アイコン・RSS・OGP 画像 ${ogImages.size} 枚・自動投稿の入口は 401・存在しないページは 404`);
+  if (failures === before6) console.log(`  ✓ robots・sitemap・manifest・アイコン・RSS・OGP 画像 ${ogImages.size} 枚・存在しないページは 404`);
 
   console.log(failures ? `\n問題が ${failures} 件あります。` : "\nすべて通りました。");
   if (failures) process.exit(1);

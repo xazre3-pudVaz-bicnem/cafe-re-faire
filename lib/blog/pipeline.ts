@@ -8,7 +8,8 @@
  *   5. 通った原稿だけを返す。通らなければ「今日は公開しない」
  *
  * ここは、モデルの呼び出し方と保存先を知らない（引数で受け取る）。
- * そのため、Vercel の API ルート（GitHub に保存）と、手元のスクリプト（ファイルに保存）で同じものを使える。
+ * 保存は scripts/blog/generate.ts が行い、本番では GitHub Actions（.github/workflows/daily-post.yml）がそれをコミットする。
+ * 試験（scripts/blog/selftest.ts）は、モデルの代わりに見本の原稿を渡して、同じ流れを確かめる。
  */
 import { z } from "zod";
 import { topics, type Topic } from "../../data/blog-topics";

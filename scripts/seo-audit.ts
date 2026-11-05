@@ -64,12 +64,12 @@ console.log("2. 店舗情報を、ページに直接書いていないか");
   };
   for (const r of roots) walk(path.join(process.cwd(), r));
 
-  const { weekday, sundayHoliday } = site.hours;
+  const { weekday, sunday } = site.hours;
   const forbidden: [RegExp, string][] = [
     [new RegExp(site.address.street.replace(/[-]/g, "[-ー－]")), "住所（番地）"],
     [new RegExp(site.address.postalCode.replace("-", "-?")), "郵便番号"],
     ...(site.phone ? [[new RegExp(site.phone.display.replace(/-/g, "[-ー－ ]?")), "電話番号"] as [RegExp, string]] : []),
-    [new RegExp(`${weekday.lastOrder}|${sundayHoliday.lastOrder}|${sundayHoliday.closes}|${weekday.closes}`), "営業時間"],
+    [new RegExp(`${weekday.lastOrder}|${sunday.lastOrder}|${sunday.closes}|${weekday.closes}`), "営業時間"],
     [new RegExp(`${cakes[0].price}\\s*円|${site.takeout.regularPrice.yen}\\s*円`), "価格"],
     [/水曜(日)?(定休|休み)|定休日は水曜/, "定休日"],
   ];

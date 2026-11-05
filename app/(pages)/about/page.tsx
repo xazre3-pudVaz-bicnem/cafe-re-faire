@@ -179,7 +179,7 @@ export default function AboutPage() {
               { term: "注文", body: `${site.ordering}します。` },
               { term: "予約", body: `${site.reservation.by}で受け付けています。` },
               { term: "支払い", body: `${paymentLine}が使えます。` },
-              { term: "持ち帰り", body: `弁当のテイクアウトができます。${site.takeout.preorderBy.join("か")}で、先に注文できます。` },
+              { term: "持ち帰り", body: `テイクアウト販売もしています。${site.takeout.preorderBy.join("か")}で、先に注文できます。` },
             ].map((row) => (
               <div key={row.term}>
                 <dt>{row.term}</dt>
@@ -225,7 +225,7 @@ export default function AboutPage() {
             <div>
               <dt>営業時間</dt>
               <dd>
-                {weekdayHours}／日曜・祝日 {sundayHours}
+                {weekdayHours}／日曜 {sundayHours}
               </dd>
             </div>
             <div>
@@ -234,7 +234,7 @@ export default function AboutPage() {
             </div>
             <div>
               <dt>メニュー</dt>
-              <dd>曜日プレート、ケーキ、飲みもの、テイクアウトの弁当</dd>
+              <dd>曜日プレート、ケーキ、飲みもの、テイクアウト</dd>
             </div>
           </dl>
         </div>
@@ -244,7 +244,7 @@ export default function AboutPage() {
         <div className="wrap">
           <Onward
             links={[
-              { href: pages.menu.path, label: "プレートランチとケーキのメニュー", note: `曜日プレート、ケーキ${cakes.length}種、テイクアウト。` },
+              { href: pages.menu.path, label: pages.menu.anchor, note: `曜日プレート、ケーキ${cakes.length}種、テイクアウト。` },
               { href: pages.access.path, label: "アクセスと営業時間", note: "地図、駐車場、水沢駅からの行き方、今月の営業日。" },
               { href: pages.blog.path, label: "ブログ", note: "店のこと、水沢のこと、店からのお知らせ。" },
             ]}

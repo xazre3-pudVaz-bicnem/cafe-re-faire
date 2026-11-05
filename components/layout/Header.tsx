@@ -64,7 +64,7 @@ export function Header() {
               <address className="t-note menu-rise mt-auto pt-12" style={{ "--i": 7 } as CSSProperties}>
                 <p>{fullAddress}</p>
                 <p>
-                  {weekdayHours}／日曜・祝日 {sundayHours}
+                  {weekdayHours}／日曜 {sundayHours}
                 </p>
                 <p>定休日 {closedLine}</p>
               </address>

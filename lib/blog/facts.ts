@@ -11,14 +11,14 @@ import { normalizeDigits } from "./text";
 
 /** プロンプトに渡す、店の事実（文章） */
 export function buildFactSheet(today: string = todayJst()): string {
-  const { weekday, sundayHoliday } = site.hours;
+  const { weekday, sunday } = site.hours;
   const routes = site.access.routes.map((r) => `${r.from}から約${r.km}km（${r.car}${r.walk ? `、${r.walk}` : ""}）`).join("／");
 
   return [
     `店名: ${site.name}（読み: ${site.reading}）。${site.kind}。`,
     `場所: ${site.address.region}${site.address.locality}${site.address.district}。住所は ${fullAddress}。${site.access.road}。近くに${site.landmark}がある。`,
     `オープン: ${jaDate(site.openedOn)}。`,
-    `営業時間: ${weekdayHours}。日曜と祝日は ${sundayHours}。（${jaTime(weekday.opens)}に開き、${jaTime(weekday.closes)}まで。土曜も同じ。日曜と祝日だけ、${jaTime(sundayHoliday.closes)}まで。ラストオーダーは${jaTime(weekday.lastOrder)}と${jaTime(sundayHoliday.lastOrder)}）`,
+    `営業時間: ${weekdayHours}。日曜は ${sundayHours}。（${jaTime(weekday.opens)}に開き、${jaTime(weekday.closes)}まで。土曜も同じ。日曜だけ、${jaTime(sunday.closes)}まで。ラストオーダーは${jaTime(weekday.lastOrder)}と${jaTime(sunday.lastOrder)}。祝日の営業時間は分かっていない）`,
     `定休日: ${site.hours.closedDay}。ほかに不定休あり。月ごとの営業日は、店のInstagramで告知している。`,
     `駐車場: ${parkingLine}。外壁の水色の看板に、駐車場の方向を示す矢印がある。`,
     `行き方の目安: ${routes}。`,
@@ -26,12 +26,12 @@ export function buildFactSheet(today: string = todayJst()): string {
     `支払い: ${paymentLine}。`,
     `注文: ${site.ordering}。`,
     `電話: ${site.phone?.display ?? "（載せていない）"}。`,
-    `メニュー（昼）: 曜日プレート。曜日ごとに内容が替わる。ごはん・おかず・サラダをひと皿に盛る。写真にある内容は ${plates.map((p) => p.label).join("・")}。ほかにピザの写真がある。`,
+    `メニュー（昼）: 曜日プレート（店の呼び方。「プレートランチ」とは書かない）。曜日ごとに内容が替わる。ごはん・おかず・サラダをひと皿に盛る。写真にある内容は ${plates.map((p) => p.label).join("・")}。ほかにピザの写真がある。`,
     `メニュー（ケーキ）: ${cakes.length}種類、各${cakePrice}円。皿に盛り、クリームとソースを添えて出す。黒い石の皿を使う。`,
     ...cakes.map((c) => `  ・${c.name} … ${c.look}`),
     `店がInstagramで人気のメニューとして紹介しているもの: ${shopFavorites.join("、")}（${shopFavorites[1]}は、名前だけ分かっている）。`,
     `飲みもの: ある。飲みものだけの利用もできる。品名と価格は分かっていない。`,
-    `テイクアウト: 弁当${site.takeout.kinds}種類。${takeoutPriceText(today)}。${site.takeout.preorderBy.join("か")}で先に注文できる。ふたに、店名と期限を書いたシールを貼っている。`,
+    `テイクアウト: テイクアウト販売もしている（店の言い方。弁当の種類の数は書かない）。弁当は${takeoutPriceText(today)}。${site.takeout.preorderBy.join("か")}で先に注文できる。ふたに、店名と期限を書いたシールを貼っている。`,
     `店のことば（Instagramより）: 「${site.words.welcome.text}」`,
     `店内: 木の柱が4本。観葉植物。グレーの壁、石の色の床。2人掛けと4人掛けのテーブル席。白いカウンター。壁にコーヒーカップの線画。壁の上のほうに古材風の板。ケーキのショーケースがあり、値札は手書き。`,
     `外観: グレーと黒の外壁。アイアンの飾りがついた水色の扉。水色の看板（コーヒーカップの絵と店名）。入口のわきにオリーブの鉢。`,
@@ -44,6 +44,7 @@ export const UNKNOWN_FACTS = [
   "席数",
   "飲みものの品名と価格（コーヒーや紅茶の種類を含む）",
   "曜日プレートの価格と、どの曜日に何が出るか",
+  "祝日の営業時間（19時まで開くのは日曜だけ）",
   "食材の産地、仕入れ先、作り方（手作り・自家製かどうかを含む）",
   "店主やスタッフの名前・経歴・ことば",
   "店名の由来、店を始めた理由",
@@ -82,9 +83,9 @@ const GENERIC_COUNT = /^[1-3](人|個|杯|皿|品|回|枚|切れ|軒|組|点|度
 /** 店について述べる段落に出てよい数値（事実シートにある数値） */
 export function allowedShopTokens(today: string = todayJst()): Set<string> {
   const set = new Set<string>(numericTokens(buildFactSheet(today)));
-  const { weekday, sundayHoliday } = site.hours;
+  const { weekday, sunday } = site.hours;
   // 時刻は、書き方の違い（9:00／9時／09:00）を受け入れる
-  for (const t of [weekday.opens, weekday.closes, weekday.lastOrder, sundayHoliday.opens, sundayHoliday.closes, sundayHoliday.lastOrder]) {
+  for (const t of [weekday.opens, weekday.closes, weekday.lastOrder, sunday.opens, sunday.closes, sunday.lastOrder]) {
     set.add(t);
     set.add(hm(t));
     for (const tok of numericTokens(jaTime(t))) set.add(tok);

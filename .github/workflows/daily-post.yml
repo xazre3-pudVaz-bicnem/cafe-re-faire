@@ -1,0 +1,102 @@
+# 毎日の自動投稿。ブログを1本書いて、検査を通ったものだけを main にコミットする。
+#
+#   この予定（毎朝 6:37 ごろ・日本時間）
+#     → npm run blog:generate（scripts/blog/generate.ts）
+#         題材を選ぶ → Claude API で書く → lib/blog/validate.ts で検査 → content/blog/ に保存
+#     → 保存した1ファイルだけを main にコミット
+#     → いつもの GitHub → Vercel のデプロイで公開
+#
+# 使う秘密の値は、リポジトリの Secrets の ANTHROPIC_API_KEY だけ。
+# コミットには、実行のたびに GitHub が発行する GITHUB_TOKEN を使う
+# （このリポジトリの Contents の書き込みだけ。実行が終わると使えなくなる）。
+#
+# 手で動かすとき … Actions → 毎日の自動投稿 → Run workflow
+#   「試し書き」にチェック（既定）… 書いて検査するだけ。コミットしない。原稿は実行の概要（Summary）に出る
+#   チェックを外す              … いますぐ1本公開する（今日の分があれば、何もしない）
+name: 毎日の自動投稿
+
+on:
+  schedule:
+    # 21:37 UTC ＝ 日本時間 6:37。時刻ちょうどは混んで遅れやすいので、半端な分にしてある
+    - cron: "37 21 * * *"
+    # 予備（日本時間 12:37）。朝の分が出ていない日だけ書く（GitHub の混雑で、朝の実行が飛ばされた日など）
+    - cron: "37 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 試し書き（書いて検査するだけ。コミットしない）
+        type: boolean
+        default: true
+      topic:
+        description: 題材の id（data/blog-topics.ts）。空なら自動で選ぶ
+        type: string
+        required: false
+      date:
+        description: 日付（YYYY-MM-DD）。空なら今日（日本時間）
+        type: string
+        required: false
+
+# ワークフロー全体では、権限を持たない。要る分だけ、下のジョブに付ける
+permissions: {}
+
+# 同時に2つは動かさない（二重に書かないため）。動いている分は止めない
+concurrency:
+  group: daily-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    name: 1本書く
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: リポジトリを取り出す
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # トークンを git の設定に残さない（コミットする手順の中でだけ使う）
+          persist-credentials: false
+
+      - name: Node.js を用意する
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 依存を入れる
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: 書いて検査する
+        id: generate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          # 試し書きは、今日の分があっても書く（コミットしないので、二重にはならない）
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          BLOG_FORCE: ${{ inputs.dry_run && '1' || '' }}
+          BLOG_TOPIC: ${{ inputs.topic }}
+          BLOG_DATE: ${{ inputs.date }}
+        run: npm run blog:generate
+
+      - name: main にコミットする
+        # 保存した記事があるときだけ。main 以外から手で動かしたときは、コミットしない
+        if: steps.generate.outputs.path != '' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POST_PATH: ${{ steps.generate.outputs.path }}
+          POST_TITLE: ${{ steps.generate.outputs.title }}
+        run: |
+          # 名義はリポジトリの持ち主にする（Vercel が、持ち主のコミットとしてデプロイするため）
+          git config user.name "xazre3-pudVaz-bicnem"
+          git config user.email "283897447+xazre3-pudVaz-bicnem@users.noreply.github.com"
+          git add -- "$POST_PATH"
+          git commit -m "blog: $POST_TITLE"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # 実行中に誰かが push していたら、その上に載せ直して、もう一度送る
+          for attempt in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            echo "送れませんでした（${attempt} 回目）。main の新しい分に載せ直します"
+            git pull --rebase origin main
+          done
+          exit 1

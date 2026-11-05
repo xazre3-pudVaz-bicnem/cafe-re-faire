@@ -14,7 +14,7 @@ import { jaDate, jaTime, site } from "@/data/site";
  * 場面ごとに、写真の大きさ・寄せる側・文章との位置を変えている（同じ箱を4つ並べない）。
  */
 export function Concept() {
-  const { weekday, sundayHoliday } = site.hours;
+  const { weekday, sunday } = site.hours;
   const { welcome } = site.words;
 
   return (
@@ -41,7 +41,7 @@ export function Concept() {
             <dt className="scene-term">朝</dt>
             <dd className="mt-3 md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-end md:gap-x-8">
               <p>
-                {jaTime(weekday.opens)}に開きます。営業は{jaTime(weekday.closes)}まで、日曜と祝日は{jaTime(sundayHoliday.closes)}まで。
+                {jaTime(weekday.opens)}に開きます。営業は{jaTime(weekday.closes)}まで、日曜は{jaTime(sunday.closes)}まで。
               </p>
               <div className="mt-7 max-md:ml-auto max-md:w-[74%] md:mt-0">
                 <Photo photo={photos.oliveTree} ratio="3/4" parallax={28} sizes="(max-width: 767px) 70vw, (max-width: 1023px) 52vw, 28vw" />
@@ -77,7 +77,7 @@ export function Concept() {
           <div>
             <dt className="scene-term">持ち帰り</dt>
             <dd className="mt-3">
-              <p>弁当は{site.takeout.kinds}種類。先に注文しておくと、受け取りがスムーズです。</p>
+              <p>テイクアウト販売もしています。先に注文しておくと、受け取りがスムーズです。</p>
               <div className="mt-7 ml-auto w-[90%] md:w-[82%]">
                 <Photo photo={photos.takeout01} ratio="4/3" reveal="right" parallax={34} sizes="(max-width: 1023px) 86vw, 44vw" />
               </div>

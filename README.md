@@ -3,8 +3,8 @@
 岩手県奥州市水沢のカフェ「Cafe Re faire（カフェ ルフェール）」の公式サイトです。
 
 - Next.js 16（App Router）／ TypeScript ／ Tailwind CSS v4
-- 全ページを静的に書き出す（動くのは、毎日の自動投稿の入口 `/api/cron/daily-post` だけ）
-- GitHub に push すると Vercel がデプロイする。ブログは、毎朝 Vercel Cron が1本書いて GitHub にコミットする
+- 全ページを静的に書き出す（トップ・メニュー・アクセスだけ、1時間ごとに描き直す）
+- GitHub に push すると Vercel がデプロイする。ブログは、毎朝 GitHub Actions が1本書いて `main` にコミットする
 
 ## 目次
 
@@ -31,12 +31,14 @@ cp .env.example .env.local   # 値を入れる（手元で見るだけなら、�
 npm run dev                  # http://localhost:3000
 ```
 
+本番のドメインは **https://www.cafe-re-faire.com**（`www` なしは `www` へ転送）。`next.config.ts` の `PRODUCTION_URL` に書いてあり、Vercel の本番ビルドのときだけ使われます。
 本番と同じ出力（canonical・sitemap・構造化データの URL）を手元で確かめるときは、公開 URL を付けてビルドします。
 
 ```bash
-NEXT_PUBLIC_SITE_URL=https://<本番のドメイン> npm run build
-NEXT_PUBLIC_SITE_URL=https://<本番のドメイン> npx next start -p 4321
+NEXT_PUBLIC_SITE_URL=https://www.cafe-re-faire.com npm run build
+NEXT_PUBLIC_SITE_URL=https://www.cafe-re-faire.com npx next start -p 4321
 npm run site:check           # 配信されている HTML を点検する
+CHECK_URL=https://www.cafe-re-faire.com NEXT_PUBLIC_SITE_URL=https://www.cafe-re-faire.com npm run site:check   # 公開後、本番そのものを点検する
 ```
 
 ## フォルダーの中身
@@ -46,8 +48,9 @@ app/
   (home)/page.tsx            トップ
   (pages)/menu|about|access  固定ページ
   (pages)/blog/              ブログ（一覧・分類・記事・RSS）
-  api/cron/daily-post/       毎日の自動投稿の入口（Vercel Cron が呼ぶ）
   sitemap.ts robots.ts manifest.ts
+.github/workflows/
+  daily-post.yml             毎日の自動投稿（GitHub Actions）
 components/
   layout/                    ヘッダー・フッター・メニュー・ページの移り変わりの幕
   sections/                  区画（ヒーロー、店舗情報、地図、記事の一覧 など）
@@ -65,8 +68,8 @@ data/
 lib/
   seo.ts schema.ts           metadata と構造化データ（JSON-LD）
   boot-script.ts             最初の描画の前に動かす小さなスクリプト（動きの準備・ヘッダーの状態）
-  blog/                      記事の読み込み、題材選び、プロンプト、検査、GitHub への保存
-scripts/                     写真の準備、点検、自動投稿の試し書き
+  blog/                      記事の読み込み、題材選び、プロンプト、検査
+scripts/                     写真の準備、点検、記事を1本書く（blog/generate.ts。自動投稿の本体）
 docs/TODO.md                 店舗に確認したいこと
 assets/source-photos/        店から届いた元の写真（サイトには出ない）
 ```
@@ -118,18 +121,20 @@ canonical・`og:url`・sitemap・構造化データの URL は、1文字も違�
 ### 流れ
 
 ```text
-Vercel Cron（毎朝 6:30 ごろ・日本時間）
-  └→ GET /api/cron/daily-post          … 合言葉（CRON_SECRET）を確かめる
-       ├→ いまある記事を読む            … ビルドに入っている分 ＋ GitHub にだけある分
+GitHub Actions（毎朝 6:37 ごろ・日本時間。.github/workflows/daily-post.yml）
+  └→ npm run blog:generate（scripts/blog/generate.ts）
+       ├→ いまある記事を読む            … main にある全記事
        ├→ 今日の分があれば、何もしない
        ├→ 題材を選ぶ                    … data/blog-topics.ts（まだ書いていないもの）
        ├→ Claude API で書く             … 店の事実シートを渡す
        ├→ 検査する                      … lib/blog/validate.ts。落ちたら、指摘を渡して直させる
-       └→ 通った原稿だけを GitHub にコミット（content/blog/<年>/<日付>-<slug>.md）
-            └→ いつもの GitHub → Vercel のデプロイで公開
+       └→ 通った原稿だけを保存          … content/blog/<年>/<日付>-<slug>.md
+  └→ 保存した1ファイルだけを main にコミット
+       └→ いつもの GitHub → Vercel のデプロイで公開
 ```
 
-Vercel へ直接デプロイする処理は、ありません。記事は必ず GitHub を通ります（履歴が残り、手で直すこともできます）。
+- 昼の 12:37 ごろにも、予備としてもう一度動きます。朝の分が出ていれば、何もしません（GitHub の混雑で、朝の実行が飛ばされた日のため）。
+- Vercel へ直接デプロイする処理は、ありません。記事は必ず GitHub を通ります（履歴が残り、手で直すこともできます）。
 
 ### 低品質な記事を量産しないための仕組み
 
@@ -169,8 +174,9 @@ Vercel へ直接デプロイする処理は、ありません。記事は必ず 
 
 ### 二重に公開しないための仕組み
 
-- 今日の日付の自動投稿がすでにあれば、何もしません（GitHub にあって、まだデプロイされていない記事も数えます）。
-- 題材は日付から決まるので、同じ日に2回呼ばれても同じファイル名になります。同じ名前のファイルは、上書きしません。
+- 今日の日付の自動投稿が `main` にあれば、何もしません（まだデプロイされていない記事も数えます）。
+- 題材は日付から決まるので、同じ日に2回動いても同じファイル名になります。同じ名前のファイルは、上書きしません。
+- 同時に2つは動きません（ワークフローの `concurrency`）。
 
 ### 手で試す
 
@@ -179,11 +185,17 @@ Vercel へ直接デプロイする処理は、ありません。記事は必ず 
 npm run blog:dry-run                      # 書いて検査するが、保存しない
 BLOG_TOPIC=tiramisu-imi npm run blog:dry-run   # 題材を指定する
 npm run blog:generate                     # content/blog/ に保存する（コミットは自分で）
+```
 
-# 本番で（コミットしない試し書き）
-curl -H "Authorization: Bearer <CRON_SECRET>" "https://<ドメイン>/api/cron/daily-post?dry=1"
-# 本番で、いますぐ1本公開する
-curl -H "Authorization: Bearer <CRON_SECRET>" "https://<ドメイン>/api/cron/daily-post"
+本番では、GitHub の Actions →「毎日の自動投稿」→ **Run workflow** で動かします。
+
+- 「試し書き」にチェック（既定）… 書いて検査するだけで、コミットしません。原稿は、実行の概要（Summary）に出ます。
+- チェックを外す … いますぐ1本公開します（今日の分があれば、何もしません）。
+
+```bash
+gh workflow run daily-post.yml                          # 試し書き
+gh workflow run daily-post.yml -f topic=tiramisu-imi    # 題材を指定して、試し書き
+gh workflow run daily-post.yml -f dry_run=false         # いますぐ1本公開する
 ```
 
 API を呼ばずに仕組みだけを確かめるには、`npm run blog:selftest`（違反の検出・重複の防止・二重投稿の防止を、見本の原稿で確かめます）。
@@ -216,53 +228,48 @@ API を呼ばずに仕組みだけを確かめるには、`npm run blog:selftest
 
 既定のモデルは `claude-haiku-4-5`（入力 $1／出力 $5、100万トークンあたり）。
 1本あたり、入力およそ6,000・出力およそ3,000トークンで **約 $0.02**、書き直しが入っても $0.1 以内の見込みです（月に数ドル以内）。
-実際の値は、Vercel のログの「トークン」の行と、Claude のコンソールで確かめてください。
+実際の値は、Actions の実行の概要（Summary）の「トークン」の行と、Claude のコンソールで確かめてください。
+GitHub Actions は、公開リポジトリなら無料です。
 
 ## 環境変数
 
-| 名前 | 必須 | 内容 |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | 本番で必須 | 公開 URL（例 `https://www.example.com`）。**入れるまで、全ページ noindex・sitemap は空** |
-| `ANTHROPIC_API_KEY` | 自動投稿に必須 | Claude API のキー |
-| `ANTHROPIC_MODEL` | 任意 | 使うモデル。省くと `claude-haiku-4-5` |
-| `CRON_SECRET` | 自動投稿に必須 | Vercel Cron の合言葉（16文字以上のでたらめな文字列） |
-| `GITHUB_TOKEN` | 自動投稿に必須 | Fine-grained personal access token（下の「GitHub 側の設定」） |
-| `GITHUB_OWNER` | 自動投稿に必須 | リポジトリの持ち主（ユーザー名か組織名） |
-| `GITHUB_REPO` | 自動投稿に必須 | リポジトリの名前 |
-| `GITHUB_BRANCH` | 任意 | コミットするブランチ。省くと `main` |
-| `GOOGLE_SITE_VERIFICATION` | 任意 | Search Console の確認用の値 |
+| 名前 | 置き場所 | 必須 | 内容 |
+| --- | --- | --- | --- |
+| `ANTHROPIC_API_KEY` | GitHub の Secrets | 自動投稿に必須 | Claude API のキー |
+| `ANTHROPIC_MODEL` | GitHub の Variables | 任意 | 使うモデル。省くと `claude-haiku-4-5` |
+| `NEXT_PUBLIC_SITE_URL` | 手元だけ | 任意 | 公開 URL。ふだんは入れない（本番のドメインは `next.config.ts` の `PRODUCTION_URL`）。入れると、そちらが優先される |
+| `GOOGLE_SITE_VERIFICATION` | Vercel | 任意 | Search Console の確認用の値 |
 
-キーやトークンは、ソースコードにも `.env.example` にも書きません。足りない変数があると、自動投稿は何もせずに、足りない名前だけを返します。
+手元で記事を書くときは、同じ名前で `.env.local` に書きます。
+キーやトークンは、ソースコードにも `.env.example` にも書きません。キーが無いと、自動投稿はそこで止まり、実行が失敗として残ります。
 
 ## Vercel 側の設定
 
 1. **プロジェクトを作る** … GitHub のリポジトリを Import する（Framework は Next.js のまま）。
-2. **環境変数を入れる** … Settings → Environment Variables。上の表のとおり。
-   `NEXT_PUBLIC_SITE_URL` は **Production だけ**に入れます（Preview に入れると、プレビューが検索結果に載るおそれがあります）。
-   入れたあとは、もう一度デプロイします（環境変数は、次のデプロイから効きます）。
-3. **ドメインをつなぐ** … Settings → Domains。`www` あり・なしのどちらかを主にして、もう片方を転送にします。
-   主にしたほうを `NEXT_PUBLIC_SITE_URL` に入れます。
-4. **Cron を確かめる** … `vercel.json` に書いてあるので、デプロイすると Settings → Cron Jobs に出ます。
-   - 時刻は `30 21 * * *`（UTC）＝ 日本時間の朝 6:30。Hobby プランでは、6:00〜6:59 のどこかで動きます。
-   - Cron が動くのは、Production のデプロイだけです。
-   - 時刻を変えるときは `vercel.json` を直して push します（Hobby プランは1日1回まで）。
-5. **関数の制限時間** … `/api/cron/daily-post` は 300 秒（Hobby プランの上限）に設定してあります。変更は要りません。
-6. **動いたかを見る** … Settings → Cron Jobs → View Logs。`[daily-post]` で始まる行に、題材・試行・トークンが出ます。
+2. **環境変数** … 入れなくても動きます（自動投稿のキーは、GitHub に置きます）。
+   Search Console の確認をタグで行うときだけ、Settings → Environment Variables に `GOOGLE_SITE_VERIFICATION` を入れて、もう一度デプロイします（環境変数は、次のデプロイから効きます）。
+3. **ドメイン** … Settings → Domains に `www.cafe-re-faire.com`（主）と `cafe-re-faire.com`（`www` へ転送）をつないであります（2026-11）。
+   ドメインを変えるときは、`next.config.ts` の `PRODUCTION_URL` も直して push します（ここが canonical・sitemap・構造化データの土台です）。
 
 `*.vercel.app` の URL で配信されるページには、設定に関係なく `X-Robots-Tag: noindex` が付きます（`next.config.ts`）。
+確認用に共有していた `cafe-re-faire.vercel.app` は、本番ドメインへ転送します。
 
 ## GitHub 側の設定
 
-1. **リポジトリを作って push する。** ブランチ名は `main`（違う名前なら `GITHUB_BRANCH` に入れる）。
-2. **Fine-grained personal access token を作る**（Settings → Developer settings → Personal access tokens → Fine-grained tokens）。
-   - Resource owner … リポジトリの持ち主
-   - Repository access … **Only select repositories** で、このリポジトリ1つだけ
-   - Repository permissions … **Contents: Read and write** だけ（Metadata: Read-only は自動で付きます）
-   - Expiration … 期限を決める。切れる前に作り直して、Vercel の `GITHUB_TOKEN` を入れ替える
-3. **トークンは、Vercel につないだ GitHub アカウント本人のものにする。**
-   別の名義でコミットすると、Vercel の Hobby プランでは、そのコミットがデプロイされないことがあります。
-4. **`main` に保護ルールを付けるとき** … 「Pull request を必須にする」を付けると、自動投稿のコミットが断られます。
-   付けるなら、トークンの持ち主をルールの対象から外してください。
+1. **リポジトリを作って push する。** ブランチ名は `main`（自動投稿は `main` にだけコミットします）。
+2. **Claude の API キーを入れる** … リポジトリの Settings → Secrets and variables → Actions → **Secrets** に、`ANTHROPIC_API_KEY` の名前で入れます。
+   モデルを替えるときは、同じ画面の **Variables** に `ANTHROPIC_MODEL` を足します。
+3. **トークンは作らなくてよい。** コミットには、実行のたびに GitHub が発行する `GITHUB_TOKEN` を使います。
+   権限はワークフローの中で「このリポジトリの Contents の書き込み」だけに絞ってあり、実行が終わると使えなくなります。
+4. **コミットの名義** … 記事のコミットは、リポジトリの持ち主（`xazre3-pudVaz-bicnem`）の名義で入ります。
+   Vercel が、持ち主のコミットとしてデプロイするためです（別の名義のコミットは、プランによってはデプロイされません）。
+   リポジトリの持ち主を変えたら、ワークフローの `git config` の2行も直します。
+5. **動いたかを見る** … Actions →「毎日の自動投稿」。実行の概要（Summary）に、題名・字数・試行の回数・トークンが出ます。
+   予定の実行が失敗すると、GitHub からメールが届きます（届くのは、ワークフローの予定 `cron` を最後に書いた人）。
+6. **予定の実行が止まったら** … 公開リポジトリでは、60日間なにも動きがないと、GitHub が予定の実行を止めます（前にメールが届きます）。
+   Actions の画面で、ワークフローを有効に戻します。
+7. **`main` に保護ルールを付けるとき** … 「Pull request を必須にする」を付けると、自動投稿のコミットが断られます。
+   付けるなら、GitHub Actions をルールの対象から外してください。
 
 ## 点検のコマンド
 
@@ -389,12 +396,13 @@ API を呼ばずに仕組みだけを確かめるには、`npm run blog:selftest
 
 ## つまずきやすいところ
 
-- **検索結果に出てこない** … `NEXT_PUBLIC_SITE_URL` が Production に入っているか。入れたあとに再デプロイしたか。
-  ページのソースに `noindex` が無いこと、`/sitemap.xml` に URL が並んでいることを確かめます。
-- **自動投稿が動かない** … Cron Jobs のログを見ます。
-  `not_configured`（環境変数が足りない）／`unauthorized`（`CRON_SECRET` が違う）／`failed`（検査を通らなかった。理由がログに出ます）。
+- **検索結果に出てこない** … `https://www.cafe-re-faire.com` のページのソースに `noindex` が無いこと、`/robots.txt` に `Sitemap:` の行があること、
+  `/sitemap.xml` に URL が並んでいることを確かめます。Search Console に登録して、sitemap を送ってあるかも見ます。
+- **自動投稿が動かない** … Actions →「毎日の自動投稿」の実行を開いて、概要（Summary）とログを見ます。
+  「ANTHROPIC_API_KEY がありません」（Secrets に無い）／「API キーが正しくありません」／「検査を通る原稿ができませんでした」（理由がログに出ます）。
+  予定の実行は、GitHub の混み具合で数分〜数十分遅れることがあり、まれに飛ばされます（飛ばされた日は、昼の予備の実行が書きます）。
 - **記事が書かれたのに公開されない** … GitHub にコミットがあるか → Vercel の Deployments に、そのコミットのデプロイがあるか。
-  無ければ、トークンの持ち主と Vercel の連携アカウントが同じかを確かめます。
+  無ければ、コミットの名義（ワークフローの `git config`）が、Vercel につないだ GitHub アカウントかを確かめます。
 - **営業時間を直したのに、記事に古い時刻が残っている** … 記事は書いた日の内容のままです。`npm run blog:audit` が、いまの事実シートと合わない記事を挙げます。
 - **Tailwind の class が効かない** … `app/globals.css` の独自の class は、必ず `@layer components` の中に書きます（外に書くと、ユーティリティを打ち消します）。
 - **写真を端まで伸ばしたい** … `.wrap`（文章の器）か `.wide`（トップの広い器）の中の写真に `pull-l` / `pull-r` を付けます（`md:pull-l` のように、幅ごとに付け外しできます）。

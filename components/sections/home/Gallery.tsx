@@ -38,9 +38,12 @@ export function Gallery() {
           <div className="col-span-10 col-start-2 mt-14 md:mt-20 lg:col-span-5 lg:col-start-5 lg:mt-12">
             <Photo photo={photos.cakeChocolatBerry} ratio="4/5" position="50% 55%" reveal="left" parallax={30} sizes="(max-width: 1023px) 78vw, 37vw" quality={85} />
           </div>
-          {/* 小：ショーケースの中 */}
+          {/*
+            小：ケーキ（ティラミスムース）。
+            ショーケースの写真は「店の使いかた」の区画に1枚だけにして、ここには1つずつのケーキを置く（2026-11-04 店から）
+          */}
           <div className="col-span-5 col-start-8 mt-3 md:mt-6 lg:col-span-2 lg:col-start-11 lg:mt-72">
-            <Photo photo={photos.showcase02} ratio="3/4" position="50% 30%" parallax={12} sizes="(max-width: 1023px) 40vw, 14vw" />
+            <Photo photo={photos.cakeTiramisu} ratio="3/4" parallax={12} sizes="(max-width: 1023px) 40vw, 14vw" />
           </div>
 
           {/* 幅いっぱい：店内 */}
